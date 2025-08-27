@@ -18,26 +18,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     return (
         <html lang="en">
         <body className="flex justify-center">
-        <header>
-            <div className="container py-3 flex items-center gap-4">
-                <Link href="/" className="font-bold">ChoreApp</Link>
-                <nav className="flex items-center gap-3 text-sm">
-                    {role === 'parent' && (
-                        <>
-                            <Link href="/parent" className="hover:underline">Chore Admin</Link>
-                            <Link href="/parent/earnings" className="hover:underline">Kids' Earnings</Link>
-                        </>
-                    )}
-                    {role === 'kid' && (
-                        <>
-                            <Link href="/kid" className="hover:underline">My Chores</Link>
-                            <Link href="/kid/earnings" className="hover:underline">My Earnings</Link>
-                        </>
-                    )}
-                    {!user && <Link href="/login" className="ml-auto hover:underline">Login</Link>}
-                </nav>
-            </div>
-        </header>
+        <div className="w-full shadow-lg bg-gradient-to-r from-gradient-start to-gradient-end">
+            <header>
+                <div className="container py-3 flex items-center gap-4">
+                    <Link href="/" className="text-2xl font-extrabold bg-gradient-to-r from-gradient-start to-gradient-end bg-clip-text text-transparent">ChoreApp</Link>
+                    <nav className="ml-auto flex items-center gap-6 text-sm font-medium">
+                        {role === 'parent' && (
+                            <>
+                                <Link href="/parent" className="transition-colors hover:text-secondary">Chore Admin</Link>
+                                <Link href="/parent/earnings" className="transition-colors hover:text-secondary">Kids' Earnings</Link>
+                            </>
+                        )}
+                        {role === 'kid' && (
+                            <>
+                                <Link href="/kid" className="transition-colors hover:text-secondary">My Chores</Link>
+                                <Link href="/kid/earnings" className="transition-colors hover:text-secondary">My Earnings</Link>
+                            </>
+                        )}
+                        {!user && <Link href="/login" className="transition-colors hover:text-secondary">Login</Link>}
+                    </nav>
+                </div>
+            </header>
+        </div>
         <main className="container py-6 w-full max-w-2xl px-4">{children}</main>
         </body>
         </html>
