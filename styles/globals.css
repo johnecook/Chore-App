@@ -1,11 +1,11 @@
-@import "tailwindcss/preflight";
-@tailwind utilities;
-
-html, body { height: 100%; }
-body { @apply bg-neutral-900 text-white; }
 .container { @apply max-w-5xl mx-auto px-4; }
-.card { @apply rounded-2xl shadow p-4 bg-white; }
-.btn { @apply inline-flex items-center rounded-xl px-4 py-2 font-medium bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50; }
+
+.card { @apply rounded-2xl bg-white/10 p-4 shadow-xl backdrop-blur border border-white/10; }
+
+.btn { @apply inline-flex items-center rounded-xl px-4 py-2 font-semibold text-black bg-gradient-to-r from-[#00F0FF] to-[#FF00F5] shadow-lg hover:opacity-90 disabled:opacity-50; }
+
+.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-gradient-to-r from-[#00F0FF] to-[#FF00F5] text-black shadow; }
+
 /* Themed form tokens (defaults) */
 :root {
     --input-bg: #ffffff;
@@ -33,9 +33,8 @@ body { @apply bg-neutral-900 text-white; }
     color: var(--input-label);
 }
 .table { @apply w-full text-sm; }
-.table th { @apply text-left font-semibold text-slate-600 pb-2; }
+.table th { @apply text-left font-semibold text-slate-400 pb-2; }
 .table td { @apply py-2; }
-.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-slate-100 text-slate-700; }
 
 /* ---------- Flash banner (top drop) ---------- */
 @keyframes slideDown {
@@ -46,42 +45,7 @@ body { @apply bg-neutral-900 text-white; }
     @apply fixed top-3 left-1/2 -translate-x-1/2 z-50 text-white rounded-xl px-4 py-2 shadow-lg;
     animation: slideDown 200ms ease-out;
 }
-.flash-success { @apply bg-emerald-600; }
-.flash-warn    { @apply bg-amber-600; }
-.flash-error   { @apply bg-rose-600; }
+.flash-success { @apply bg-emerald-500 shadow; }
+.flash-warn    { @apply bg-amber-500 shadow; }
+.flash-error   { @apply bg-rose-500 shadow; }
 
-html, body { height: 100%; }
-body { @apply bg-slate-50 text-slate-900; }
-.container { @apply max-w-5xl mx-auto px-4; }
-.card { @apply rounded-2xl shadow p-4 bg-white; }
-.btn { @apply inline-flex items-center rounded-xl px-4 py-2 font-medium bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50; }
-/* Themed form tokens (defaults) */
-:root {
-    --input-bg: #ffffff;
-    --input-text: #0f172a; /* slate-900 */
-    --input-border: #cbd5e1; /* slate-300 */
-    --input-label: #334155; /* slate-600 */
-}
-/* Match Supabase Auth dark inputs */
-.theme-auth {
-    --input-bg: #0f172a;  /* dark input */
-    --input-text: #ffffff;
-    --input-border: #334155;
-    --input-label: #e2e8f0;
-}
-.input {
-    @apply w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2;
-    background-color: var(--input-bg);
-    color: var(--input-text);
-    border-color: var(--input-border);
-    /* fallback ring color */
-    --tw-ring-color: #94a3b8; /* slate-400 */
-}
-.label {
-    @apply text-sm font-medium;
-    color: var(--input-label);
-}
-.table { @apply w-full text-sm; }
-.table th { @apply text-left font-semibold text-slate-600 pb-2; }
-.table td { @apply py-2; }
-.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-slate-100 text-slate-700; }
