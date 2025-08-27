@@ -1,7 +1,6 @@
 import FlashBanner from '@/components/flash-banner'
 import { supabaseServer } from '@/lib/supabase/server'
-import { upsertChore, createAssignment, verifyCheckin, payKid } from './actions'
-import { Money } from '@/components/money'
+import { upsertChore, createAssignment, verifyCheckin } from './actions'
 import { RRuleBuilder } from '@/components/rrule-builder'
 
 async function loadData() {
@@ -14,20 +13,19 @@ async function loadData() {
 
     const { data: household } = await sb.from('households').select('id, name, timezone, allowance_anchor_date').eq('id', profile.household_id).single()
 
-    const [chRes, kidsRes, ciRes, balRes] = await Promise.all([
+    const [chRes, kidsRes, ciRes] = await Promise.all([
         sb.from('chores').select('id, title, default_amount, household_id'),
         sb.from('profiles').select('id, display_name').neq('role','parent'),
         sb.from('checkins').select('id, assignment_id, completed_at, verified, completed_by').order('completed_at', { ascending: false }).limit(50),
-        sb.from('vw_kid_balances').select('*'),
     ])
 
-    return { user, profile, household, hhChores: chRes.data ?? [], kids: kidsRes.data ?? [], checkins: ciRes.data ?? [], balances: balRes.data ?? [] }
+    return { user, profile, household, hhChores: chRes.data ?? [], kids: kidsRes.data ?? [], checkins: ciRes.data ?? [] }
 }
 
 export default async function ParentPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
     const data = await loadData()
     if (!data) return <div>Please login</div>
-    const { profile, household, hhChores, kids, checkins, balances } = data
+    const { profile, household, hhChores, kids, checkins } = data
 
     const message = typeof searchParams?.flash === 'string' ? searchParams.flash : undefined
     const t = (searchParams?.t as 'success' | 'warn' | 'error') ?? 'success'
@@ -35,7 +33,7 @@ export default async function ParentPage({ searchParams }: { searchParams: { [ke
     return (
         <div className="space-y-8">
             {message && <FlashBanner message={decodeURIComponent(message)} type={t} />}
-            <h1 className="text-2xl font-bold">Parent dashboard</h1>
+            <h1 className="text-2xl font-bold">Chore admin</h1>
 
             {/* Create Chore */}
             <section className="card">
@@ -125,26 +123,7 @@ export default async function ParentPage({ searchParams }: { searchParams: { [ke
                 </table>
             </section>
 
-            {/* Balances & payout */}
-            <section className="card">
-                <h2 className="text-lg font-semibold mb-3">Balances</h2>
-                <table className="table">
-                    <thead><tr><th>Kid</th><th>Balance</th><th></th></tr></thead>
-                    <tbody>
-                    {balances.map((b: any) => (
-                        <tr key={b.kid_id}>
-                            <td>{(kids.find(k => k.id === b.kid_id)?.display_name) ?? b.kid_id}</td>
-                            <td><Money value={Number(b.balance_dollars)} /></td>
-                            <td>
-                                <form action={async () => { 'use server'; await payKid(profile.household_id, b.kid_id) }}>
-                                    <button className="btn" type="submit">Pay now</button>
-                                </form>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            </section>
+
         </div>
     )
 }

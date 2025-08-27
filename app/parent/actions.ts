@@ -36,6 +36,7 @@ export async function verifyCheckin(id: string) {
 export async function payKid(householdId: string, kidId: string) {
     const sb = supabaseServer()
     const { error } = await sb.rpc('create_full_payout_for_kid', { hh: householdId, kid: kidId })
-    if (error) redirect('/parent?flash=' + encodeURIComponent('Payout failed') + '&t=error')
-    redirect('/parent?flash=' + encodeURIComponent('Payout recorded') + '&t=success')
+    const base = '/parent/earnings'
+    if (error) redirect(base + '?flash=' + encodeURIComponent('Payout failed') + '&t=error')
+    redirect(base + '?flash=' + encodeURIComponent('Payout recorded') + '&t=success')
 }
