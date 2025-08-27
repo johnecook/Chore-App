@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { RRule } from 'rrule'
+import type { Weekday } from 'rrule'
 import { formatInTimeZone } from 'date-fns-tz'
 
 const DAY_ORDER = ['MO','TU','WE','TH','FR','SA','SU'] as const
@@ -25,7 +26,7 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
     const [freq, setFreq] = useState<Freq>('DAILY')
     const [interval, setInterval] = useState<number>(1)
     const [byday, setByday] = useState<string[]>(['MO','TU','WE','TH','FR']) // default weekdays
-    const [bymonthday, setByMonthDay] = useState<number[]>([]) // empty = use anchor day for monthly
+    const [byMonthDay, setByMonthDay] = useState<number[]>([]) // empty = use anchor day for monthly
 
     // Initialize from incoming value (if any)
     useEffect(() => {
@@ -36,7 +37,7 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
             setFreq((RRule.FREQUENCIES[o.freq] as string).toUpperCase() as Freq)
             setInterval(o.interval ?? 1)
             if (o.byweekday?.length) {
-                setByday(o.byweekday.map((w: any) => DAY_ORDER[w.weekday]))
+                setByday(o.byweekday.map((w: Weekday) => DAY_ORDER[w.weekday]))
             }
             if (o.bymonthday?.length) {
                 setByMonthDay(o.bymonthday as number[])
@@ -53,11 +54,11 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
             parts.push(`BYDAY=${days.join(',')}`)
         }
         if (freq === 'MONTHLY') {
-            if (bymonthday.length > 0) parts.push(`BYMONTHDAY=${[...bymonthday].sort((a,b)=>a-b).join(',')}`)
+            if (byMonthDay.length > 0) parts.push(`BYMONTHDAY=${[...byMonthDay].sort((a,b)=>a-b).join(',')}`)
             // if empty, DB logic defaults to anchor day-of-month
         }
         return parts.join(';')
-    }, [freq, interval, byday, bymonthday])
+    }, [freq, interval, byday, byMonthDay])
 
     useEffect(() => { onChange?.(rrule) }, [rrule, onChange])
 
@@ -129,7 +130,7 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
                     <div className="grid grid-cols-7 gap-2 max-w-xl">
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(n => (
                             <button type="button" key={n}
-                                    className={`px-2 py-2 rounded-xl border text-sm ${bymonthday.includes(n) ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`}
+                                    className={`px-2 py-2 rounded-xl border text-sm ${byMonthDay.includes(n) ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`}
                                     onClick={() => toggleDom(n)}>
                                 {n}
                             </button>
