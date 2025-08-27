@@ -6,7 +6,7 @@ import { completeAssignmentAction } from './actions'
 async function getDueToday() {
     const sb = supabaseServer()
     const { data: { user } } = await sb.auth.getUser()
-    if (!user) return { user: null, rows: [] as any[] }
+    if (!user) return { user: null, rows: [] as never[] }
     const { data: rows, error } = await sb.from('vw_due_today').select('*')
     if (error) throw error
     return { user, rows: rows ?? [] }
@@ -27,7 +27,7 @@ export default async function KidPage({ searchParams }: { searchParams: { [key: 
                     <form key={r.assignment_id} action={completeAssignmentAction.bind(null, r.assignment_id)}>
                         <div className="flex items-center gap-3">
                             <div className="flex-1">
-                                <ChoreCard title={r.chore_title} amount={Number(r.amount_dollars)} dueTime={r.due_time_local} isAnyone={r.is_anyone} />
+                                <ChoreCard title={r.chore_title} amount={Number(r.amount)} dueTime={r.due_time_local} isAnyone={r.is_anyone} />
                             </div>
                             <button type="submit" className="btn" disabled={r.completed_today}> {r.completed_today ? 'Done' : 'Complete'} </button>
                         </div>

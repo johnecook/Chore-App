@@ -8,8 +8,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
-        <body>
-        <header className="border-b bg-white">
+        <body className="flex justify-center">
+        <header>
             <div className="container py-3 flex items-center gap-4">
                 <Link href="/" className="font-bold">ChoreApp</Link>
                 <nav className="flex items-center gap-3 text-sm">
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </nav>
             </div>
         </header>
-        <main className="container py-6">{children}</main>
+        <main className="container py-6 w-full max-w-2xl px-4">{children}</main>
         </body>
         </html>
     )
