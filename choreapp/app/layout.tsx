@@ -26,11 +26,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                      <Image
                         src="/logo.png"   
                         alt="Chore App Logo"
-                        width={120}
-                        height={120}
+                        width={60}
+                        height={60}
                         priority
                     />
-                    ChoreApp</Link>
+                    </Link>
                     <nav className="flex items-center gap-6 text-sm font-medium">
                         {role === 'parent' && (
                             <>
