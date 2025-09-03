@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <header>
                 <div className="container py-3 flex items-center gap-4">
                     <Link href="/" className="text-2xl font-extrabold bg-gradient-to-r from-gradient-start to-gradient-end bg-clip-text text-transparent">ChoreApp</Link>
-                    <nav className="ml-auto flex items-center gap-6 text-sm font-medium">
+                    <nav className="flex items-center gap-6 text-sm font-medium">
                         {role === 'parent' && (
                             <>
                                 <Link href="/parent" className="transition-colors hover:text-secondary">Chore Admin</Link>

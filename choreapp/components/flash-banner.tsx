@@ -15,7 +15,7 @@ export default function FlashBanner({ message, type = 'success' }: { message: st
             ? 'from-amber-400 to-secondary'
             : 'from-gradient-start to-gradient-end'
     return (
-        <div className={`flash-banner bg-gradient-to-r ${color}`} role="status" aria-live="polite">
+    <div className={`flash-banner bg-white/80 ${color}`} role="status" aria-live="polite">
             <div className="flex items-center gap-3">
                 <span>{message}</span>
                 <button type="button" className="ml-2 rounded-lg bg-slate-900/20 px-2 py-1" onClick={() => setOpen(false)}>
