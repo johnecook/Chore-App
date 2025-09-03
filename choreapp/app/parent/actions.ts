@@ -40,3 +40,23 @@ export async function payKid(householdId: string, kidId: string) {
     if (error) redirect(base + '?flash=' + encodeURIComponent('Payout failed') + '&t=error')
     redirect(base + '?flash=' + encodeURIComponent('Payout recorded') + '&t=success')
 }
+export async function updateAssignment(formData: FormData) {
+    const sb = supabaseServerAction()
+    const id = String(formData.get('id'))
+    const choreId = String(formData.get('chore_id'))
+    const kidId = String(formData.get('kid_id') || '') || null
+    const amountOverride = formData.get('amount_override') ? Number(formData.get('amount_override')) : null
+    const dueAt = formData.get('due_at') ? new Date(String(formData.get('due_at'))) : null
+    const rrule = String(formData.get('rrule') || '') || null
+    const { error } = await sb.from('assignments').update({ chore_id: choreId, kid_id: kidId, amount_override: amountOverride, due_at: dueAt, rrule }).eq('id', id)
+    if (error) redirect('/parent/assignments?flash=' + encodeURIComponent('Failed to update assignment') + '&t=error')
+    redirect('/parent/assignments?flash=' + encodeURIComponent('Assignment updated') + '&t=success')
+}
+
+export async function deleteAssignment(id: string) {
+    const sb = supabaseServerAction()
+    const { error } = await sb.from('assignments').delete().eq('id', id)
+    if (error) redirect('/parent/assignments?flash=' + encodeURIComponent('Failed to delete assignment') + '&t=error')
+    redirect('/parent/assignments?flash=' + encodeURIComponent('Assignment deleted') + '&t=success')
+}
+
