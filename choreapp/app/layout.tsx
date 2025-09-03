@@ -1,6 +1,7 @@
 import './globals.css'
 import Link from 'next/link'
 import { supabaseServer } from '@/lib/supabase/server'
+import Image from "next/image";
 
 export const metadata = {
     title: 'ChoreApp',
@@ -21,7 +22,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="w-full shadow-lg bg-gradient-to-r from-gradient-start to-gradient-end">
             <header>
                 <div className="container py-3 flex items-center gap-4">
-                    <Link href="/" className="text-2xl font-extrabold bg-gradient-to-r from-gradient-start to-gradient-end bg-clip-text text-transparent">ChoreApp</Link>
+                    <Link href="/" className="text-2xl font-extrabold bg-gradient-to-r from-gradient-start to-gradient-end bg-clip-text text-transparent">
+                     <Image
+                        src="/logo.png"   
+                        alt="Chore App Logo"
+                        width={120}
+                        height={120}
+                        priority
+                    />
+                    ChoreApp</Link>
                     <nav className="flex items-center gap-6 text-sm font-medium">
                         {role === 'parent' && (
                             <>
