@@ -35,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         {role === 'parent' && (
                             <>
                                 <Link href="/parent" className="transition-colors hover:text-secondary">Chore Admin</Link>
+                                <Link href="/parent/assignments" className="transition-colors hover:text-secondary">Assignments</Link>
                                 <Link href="/parent/earnings" className="transition-colors hover:text-secondary">Kids' Earnings</Link>
                             </>
                         )}
