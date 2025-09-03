@@ -1,9 +1,9 @@
 'use server'
-import { supabaseServer } from '@/lib/supabase/server'
+import { supabaseServerAction } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export async function upsertChore(formData: FormData) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const title = String(formData.get('title') || '')
     const amount = Number(formData.get('amount') || 0)
     const householdId = String(formData.get('household_id'))
@@ -14,7 +14,7 @@ export async function upsertChore(formData: FormData) {
 }
 
 export async function createAssignment(formData: FormData) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const choreId = String(formData.get('chore_id'))
     const kidId = String(formData.get('kid_id') || '') || null
     const amountOverride = formData.get('amount_override') ? Number(formData.get('amount_override')) : null
@@ -27,14 +27,14 @@ export async function createAssignment(formData: FormData) {
 }
 
 export async function verifyCheckin(id: string) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const { error } = await sb.from('checkins').update({ verified: true }).eq('id', id)
     if (error) redirect('/parent?flash=' + encodeURIComponent('Failed to verify') + '&t=error')
     redirect('/parent?flash=' + encodeURIComponent('Check-in verified') + '&t=success')
 }
 
 export async function payKid(householdId: string, kidId: string) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const { error } = await sb.rpc('create_full_payout_for_kid', { hh: householdId, kid: kidId })
     const base = '/parent/earnings'
     if (error) redirect(base + '?flash=' + encodeURIComponent('Payout failed') + '&t=error')

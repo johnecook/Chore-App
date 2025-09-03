@@ -1,9 +1,9 @@
 'use server'
-import { supabaseServer } from '@/lib/supabase/server'
+import { supabaseServerAction } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export async function completeAssignment(assignmentId: string) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const { data: { user }, error: ue } = await sb.auth.getUser()
     if (ue) throw ue
     if (!user) throw new Error('Not signed in')
@@ -21,7 +21,7 @@ export async function completeAssignment(assignmentId: string) {
 
 // Form-friendly action that redirects with a flash banner
 export async function completeAssignmentAction(assignmentId: string) {
-    const sb = supabaseServer()
+    const sb = supabaseServerAction()
     const { data: { user } } = await sb.auth.getUser()
     if (!user) redirect('/login')
 
