@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
             </header>
         </div>
-    <main className="container py-6 w-full max-w-2xl px-4 mx-auto">{children}</main>
+    <main className="container min-h-screen py-6 w-full max-w-2xl px-4 mx-auto">{children}</main>
         </body>
         </html>
     )

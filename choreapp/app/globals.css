@@ -7,7 +7,7 @@ html, body {
 }
 
 body {
-  @apply bg-gradient-to-b from-indigo-900 via-purple-900 to-black text-white;
+  @apply bg-gradient-to-b from-indigo-900 via-purple-900 to-black text-white bg-no-repeat bg-fixed;
   font-family: 'Sora', sans-serif;
 }
 
