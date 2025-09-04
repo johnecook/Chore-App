@@ -34,12 +34,14 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
         try {
             const r = RRule.fromString(value)
             const o = r.origOptions
-            setFreq((RRule.FREQUENCIES[o.freq] as string).toUpperCase() as Freq)
-            setInterval(o.interval ?? 1)
-            if (o.byweekday?.length) {
-                setByday(o.byweekday.map((w: Weekday) => DAY_ORDER[w.weekday]))
+            if (o.freq !== undefined) {
+                setFreq((RRule.FREQUENCIES[o.freq] as string).toUpperCase() as Freq)
             }
-            if (o.bymonthday?.length) {
+            setInterval(o.interval ?? 1)
+            if (Array.isArray(o.byweekday) && o.byweekday.length) {
+                setByday((o.byweekday as Weekday[]).map((w) => DAY_ORDER[w.weekday]))
+            }
+            if (Array.isArray(o.bymonthday) && o.bymonthday.length) {
                 setByMonthDay(o.bymonthday as number[])
             }
         } catch {}

@@ -72,7 +72,7 @@ export function AssignmentEditor({ assignment, chores, kids, household }: Props)
                                 <button className="btn" type="submit">Save</button>
                             </div>
                         </form>
-                        <form action={async () => { 'use server'; await deleteAssignment(assignment.id) }} className="mt-2 flex justify-end">
+                        <form action={deleteAssignment.bind(null, assignment.id)} className="mt-2 flex justify-end">
                             <button className="btn" type="submit">Delete</button>
                         </form>
                     </div>
