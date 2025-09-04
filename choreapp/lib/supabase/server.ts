@@ -14,7 +14,7 @@ export function supabaseServer() {
     {
       cookies: {
         get: (name: string) => cookieStore.get(name)?.value,
-      },
+      } as any,
     }
   )
 }
@@ -35,7 +35,7 @@ export function supabaseServerAction() {
           cookieStore.set({ name, value, ...options }),
         remove: (name: string, options: CookieOptions) =>
           cookieStore.set({ name, value: '', ...options }),
-      },
+      } as any,
     }
   )
 }
