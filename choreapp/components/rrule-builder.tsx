@@ -97,7 +97,7 @@ export function RRuleBuilder({ value, onChange, name = 'rrule', anchorDate, time
                     <label className="label">Interval</label>
                     <input className="input" type="number" min={1} step={1} value={interval}
                            onChange={e => setInterval(parseInt(e.target.value || '1', 10))} />
-                    <p className="text-xs text-slate-500 mt-1">Every <b>{interval||1}</b> {freq.toLowerCase()}(s)</p>
+                    <p className="text-xs text-violet-400 mt-1">Every <b>{interval||1}</b> {freq.toLowerCase()}(s)</p>
                 </div>
             </div>
 

@@ -11,14 +11,14 @@
     --input-bg: #ffffff;
     --input-text: #0f172a; /* slate-900 */
     --input-border: #cbd5e1; /* slate-300 */
-    --input-label: #334155; /* slate-600 */
+    --input-label: #b1d0f9; /* slate-600 */
 }
 /* Match Supabase Auth dark inputs */
 .theme-auth {
     --input-bg: #0f172a;  /* dark input */
     --input-text: #ffffff;
     --input-border: #334155;
-    --input-label: #e2e8f0;
+    --input-label: #b1d0f9;
 }
 .input {
     @apply w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2;
