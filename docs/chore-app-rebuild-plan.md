@@ -34,6 +34,23 @@
     - parent approval required toggle
 - MVP is allowance-money focused only. Points, reward stores, badges, and non-money incentives are explicitly post-MVP and should not shape the initial data model.
 
+### Chore instances and occurrence identity
+- Recurring and one-off chore templates generate concrete chore instances that represent one due occurrence for one assignee or one up-for-grabs slot.
+- Child completion, parent approval, rejection, expiration, and ledger credit attach to a chore instance, not directly to a chore template.
+- Each instance records:
+  - source template
+  - earning household
+  - assigned child or up-for-grabs assignment mode
+  - occurrence date
+  - due window start/end in the household's local timezone
+  - value model and amount snapshot
+  - photo/approval requirement snapshots
+  - current lifecycle status
+- Instance generation must be idempotent. A template cannot create duplicate instances for the same assignee/up-for-grabs slot, occurrence date, and due window.
+- Editing a chore template affects future generated instances only. Existing instances keep their value, evidence requirements, assignment, and due-window snapshots unless a parent explicitly edits that instance.
+- Missed chores expire from the instance's due window, giving the app a stable record of what was missed.
+- Ledger credits are created from the approved instance snapshot so historical earnings do not change when a template is edited later.
+
 ### Chore lifecycle
 - States:
   - `available` (for up-for-grabs)
@@ -157,6 +174,9 @@ Also observed in market messaging:
 - Ledger entries are append-only.
 - Approval-required chores cannot be credited before approval.
 - Claimed up-for-grabs chores cannot be claimed again.
+- Chore instances are uniquely identified by template, assignee/up-for-grabs slot, occurrence date, and due window.
+- Chore submissions, approvals, expirations, and ledger credits attach to chore instances.
+- Existing chore instances retain their snapshotted value and evidence requirements after template edits.
 - Each child has exactly one primary household at a time.
 - Each household has exactly one primary payout parent at a time.
 - Historical ledger records retain their original earning household and payout owner.
