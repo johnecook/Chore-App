@@ -28,7 +28,7 @@
   - schedule type: daily / weekly / interval / one-off
   - due-time window (optional)
   - value model: fixed dollar value, allowance-included, or unpaid
-  - assignment mode: specific child / all children / up-for-grabs
+  - assignment mode: selected children / all eligible children / up-for-grabs
   - completion evidence requirements:
     - photo required toggle
     - parent approval required toggle
@@ -37,6 +37,9 @@
 ### Chore instances and occurrence identity
 - Recurring and one-off chore templates generate concrete chore instances that represent one due occurrence for one assignee or one up-for-grabs slot.
 - Child completion, parent approval, rejection, expiration, and ledger credit attach to a chore instance, not directly to a chore template.
+- A chore template can target one selected child, multiple selected children, all eligible children in the household, or one up-for-grabs slot.
+- For selected-child and all-eligible-child assignments, the scheduler creates one child-specific instance per child per occurrence. Each instance has its own status, submission, approval, rejection, expiration, and ledger credit.
+- Editing a template's child assignment list affects future generated instances only unless a parent explicitly edits existing instances.
 - Each instance records:
   - source template
   - earning household
@@ -48,6 +51,11 @@
   - current lifecycle status
 - Instance generation must be idempotent. A template cannot create duplicate instances for the same assignee/up-for-grabs slot, occurrence date, and due window.
 - Editing a chore template affects future generated instances only. Existing instances keep their value, evidence requirements, assignment, and due-window snapshots unless a parent explicitly edits that instance.
+- An up-for-grabs template creates one claimable instance per occurrence, not one instance per child.
+- Up-for-grabs instances start without an assigned child. When a child claims one, the claim atomically sets and locks the instance's assigned child.
+- A claimed up-for-grabs instance behaves like that child's normal assigned chore: submission, approval, rejection, expiration, and ledger credit all attach to the claimed instance.
+- Other children cannot claim or submit a claimed up-for-grabs instance.
+- Claimed up-for-grabs chores stay assigned to the claiming child until completed, rejected/reopened by a parent, manually released by a parent, or expired.
 - Missed chores expire from the instance's due window, giving the app a stable record of what was missed.
 - Ledger credits are created from the approved instance snapshot so historical earnings do not change when a template is edited later.
 
@@ -174,6 +182,7 @@ Also observed in market messaging:
 - Ledger entries are append-only.
 - Approval-required chores cannot be credited before approval.
 - Claimed up-for-grabs chores cannot be claimed again.
+- A chore template assigned to multiple children generates separate child-specific instances so each child has independent completion, approval, and payout behavior.
 - Chore instances are uniquely identified by template, assignee/up-for-grabs slot, occurrence date, and due window.
 - Chore submissions, approvals, expirations, and ledger credits attach to chore instances.
 - Existing chore instances retain their snapshotted value and evidence requirements after template edits.
