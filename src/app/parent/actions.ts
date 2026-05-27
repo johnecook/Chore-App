@@ -8,6 +8,10 @@ import {
   deleteSubmissionPhoto,
   rejectChoreSubmission,
 } from "@/lib/supabase/chore-commands";
+import {
+  createPhotoCleanupLookupClient,
+  removeStoredChorePhotos,
+} from "@/lib/supabase/chore-photo-storage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const approveSubmissionSchema = z.object({
@@ -101,6 +105,38 @@ export async function closeOutPayoutAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
+  const photoLookupSupabase = createPhotoCleanupLookupClient(supabase);
+  const { data: approvedLedgerRows, error: ledgerError } = await photoLookupSupabase
+    .from("ledger_transactions")
+    .select("chore_instance_id")
+    .eq("pay_period_id", parsed.data.payPeriodId)
+    .eq("child_profile_id", parsed.data.childProfileId)
+    .eq("transaction_type", "approved_credit");
+
+  if (ledgerError) {
+    throw new Error(ledgerError.message);
+  }
+
+  const approvedInstanceIds = [
+    ...new Set(
+      approvedLedgerRows
+        ?.map((row) => row.chore_instance_id)
+        .filter((instanceId): instanceId is string => Boolean(instanceId)) ?? [],
+    ),
+  ];
+  const { data: photoSubmissions, error: photoSubmissionError } = approvedInstanceIds.length
+    ? await photoLookupSupabase
+        .from("chore_submissions")
+        .select("photo_storage_path")
+        .in("instance_id", approvedInstanceIds)
+        .is("photo_deleted_at", null)
+        .not("photo_storage_path", "is", null)
+    : { data: [], error: null };
+
+  if (photoSubmissionError) {
+    throw new Error(photoSubmissionError.message);
+  }
+
   let payoutId: string;
 
   try {
@@ -112,6 +148,10 @@ export async function closeOutPayoutAction(formData: FormData) {
   } catch (error) {
     parentDashboardError(error instanceof Error ? error.message : "Could not close out payout.");
   }
+
+  await removeStoredChorePhotos(
+    photoSubmissions?.map((submission) => submission.photo_storage_path) ?? [],
+  );
 
   redirect(`/parent?paid=${payoutId}`);
 }
@@ -126,12 +166,23 @@ export async function deleteSubmissionPhotoAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
+  const { data: submission, error: submissionError } = await supabase
+    .from("chore_submissions")
+    .select("photo_storage_path")
+    .eq("id", parsed.data.submissionId)
+    .maybeSingle();
+
+  if (submissionError) {
+    throw new Error(submissionError.message);
+  }
 
   try {
     await deleteSubmissionPhoto(supabase, parsed.data.submissionId);
   } catch (error) {
     parentDashboardError(error instanceof Error ? error.message : "Could not remove photo.");
   }
+
+  await removeStoredChorePhotos([submission?.photo_storage_path]);
 
   redirect("/parent?photoDeleted=1");
 }
