@@ -19,9 +19,9 @@ export function ParentNav() {
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
-          href="/parent/children"
+          href="/parent/household"
         >
-          Children
+          Household
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"

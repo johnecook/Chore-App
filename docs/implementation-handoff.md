@@ -66,6 +66,9 @@ Phase 2 placeholders, not MVP tables unless explicitly pulled forward:
 ## Critical business rules
 
 - Parents create households and household admins invite additional parents.
+- Parent accounts belong to one household at a time. If a parent accepts an invite to a different household, disconnect that parent from the previous parent/admin household membership.
+- Child accounts can still belong to multiple households for split-household support.
+- Parent household management should be one combined view for household settings, parent membership, child membership, invites, and child availability entry points. Do not split parent/child household membership management across separate top-level screens.
 - Child accounts use email/password in MVP.
 - Auth/profile modeling must allow parent-managed username + PIN later without changing chore, ledger, or household ownership data.
 - A child can belong to multiple households but has exactly one primary payout household at a time when money features are enabled.

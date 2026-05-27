@@ -4,16 +4,25 @@
 do $$
 declare
   parent_id uuid := '00000000-0000-4000-8000-000000000201';
+  chores_only_parent_id uuid := '00000000-0000-4000-8000-000000000202';
   created_household_id uuid;
 begin
   insert into auth.users (id, email, raw_user_meta_data, is_sso_user, is_anonymous)
-  values (
-    parent_id,
-    'onboarding-parent@example.test',
-    jsonb_build_object('app_role', 'parent', 'display_name', 'Onboarding Parent'),
-    false,
-    false
-  );
+  values
+    (
+      parent_id,
+      'onboarding-parent@example.test',
+      jsonb_build_object('app_role', 'parent', 'display_name', 'Onboarding Parent'),
+      false,
+      false
+    ),
+    (
+      chores_only_parent_id,
+      'onboarding-chores-only-parent@example.test',
+      jsonb_build_object('app_role', 'parent', 'display_name', 'Chores Only Parent'),
+      false,
+      false
+    );
 
   perform set_config('request.jwt.claim.sub', parent_id::text, true);
 
@@ -64,6 +73,8 @@ begin
 	  ) then
 	    raise exception 'Expected biweekly pay cycle setting';
 	  end if;
+
+	  perform set_config('request.jwt.claim.sub', chores_only_parent_id::text, true);
 
 	  created_household_id := public.create_parent_household(
 	    household_name => 'Chores Only Household',

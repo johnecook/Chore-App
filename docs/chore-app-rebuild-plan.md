@@ -472,7 +472,8 @@ The numbered MVP implementation phases below are delivery slices for the first r
 - Parent UX should reduce approval fatigue.
 - The approval queue should make the chore, child, submitted evidence, and approve/reject actions easy to scan.
 - Parent dashboards should prioritize today's status and pending approvals, not full reporting.
-- Parent/admin setup and management flows should be comfortable on desktop, including chore template editing, household settings, optional pay cycle settings, history review, and optional payout closeout.
+- Parent/admin setup and management flows should be comfortable on desktop, including chore template editing, optional pay cycle settings, history review, and optional payout closeout.
+- Household management should be a single parent-facing view that combines household settings, parent membership, child membership, invites, and child availability entry points. Avoid separate competing top-level screens for children versus the household.
 - Payout closeout should clearly show which child, which pay period, who is responsible for paying, and what amount is being marked paid.
 
 ### Errors, empty states, and offline states

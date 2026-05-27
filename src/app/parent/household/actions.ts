@@ -1,0 +1,165 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const createParentInviteSchema = z.object({
+  parentEmail: z.email(),
+});
+
+const createChildInviteSchema = z.object({
+  childName: z.string().trim().min(1).max(80),
+  childEmail: z.email(),
+});
+
+const updateHouseholdSchema = z.object({
+  householdName: z.string().trim().min(1).max(120),
+  householdTimezone: z.string().trim().min(1).max(80),
+});
+
+const updateParentRoleSchema = z.object({
+  parentUserId: z.uuid(),
+  role: z.enum(["admin", "parent"]),
+});
+
+function householdSetupError(message: string): never {
+  redirect(`/parent/household?error=${encodeURIComponent(message)}`);
+}
+
+async function requireAdminHousehold() {
+  const [profile, householdId] = await Promise.all([
+    requireCurrentProfile(),
+    getCurrentParentHouseholdId(),
+  ]);
+
+  if (profile.appRole === "child") {
+    redirect("/kid");
+  }
+
+  if (!householdId) {
+    redirect("/onboarding/household");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: membership, error } = await supabase
+    .from("household_memberships")
+    .select("role")
+    .eq("household_id", householdId)
+    .eq("user_id", profile.id)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (error) {
+    householdSetupError(error.message);
+  }
+
+  if (!membership) {
+    householdSetupError("Only a household admin can manage household settings.");
+  }
+
+  return { householdId, profile, supabase };
+}
+
+export async function createParentInviteAction(formData: FormData) {
+  const parsed = createParentInviteSchema.safeParse({
+    parentEmail: formData.get("parentEmail"),
+  });
+
+  if (!parsed.success) {
+    householdSetupError("Enter a valid parent email.");
+  }
+
+  const { householdId, supabase } = await requireAdminHousehold();
+  const { data, error } = await supabase.rpc("create_parent_invitation", {
+    target_household_id: householdId,
+    parent_email: parsed.data.parentEmail,
+  });
+
+  if (error || !data) {
+    householdSetupError(error?.message ?? "Could not create parent invitation.");
+  }
+
+  redirect(`/parent/household?invited=${data}`);
+}
+
+export async function createChildInviteAction(formData: FormData) {
+  const parsed = createChildInviteSchema.safeParse({
+    childName: formData.get("childName"),
+    childEmail: formData.get("childEmail"),
+  });
+
+  if (!parsed.success) {
+    householdSetupError("Enter the child's name and a valid email.");
+  }
+
+  const { householdId, supabase } = await requireAdminHousehold();
+  const { data, error } = await supabase.rpc("create_child_invitation", {
+    target_household_id: householdId,
+    child_email: parsed.data.childEmail,
+    child_display_name: parsed.data.childName,
+  });
+
+  if (error || !data) {
+    householdSetupError(error?.message ?? "Could not create child invitation.");
+  }
+
+  redirect(`/parent/household?invited=${data}`);
+}
+
+export async function updateHouseholdAction(formData: FormData) {
+  const parsed = updateHouseholdSchema.safeParse({
+    householdName: formData.get("householdName"),
+    householdTimezone: formData.get("householdTimezone"),
+  });
+
+  if (!parsed.success) {
+    householdSetupError("Enter a household name and timezone.");
+  }
+
+  const { householdId, supabase } = await requireAdminHousehold();
+  const { error } = await supabase
+    .from("households")
+    .update({
+      name: parsed.data.householdName,
+      timezone: parsed.data.householdTimezone,
+    })
+    .eq("id", householdId);
+
+  if (error) {
+    householdSetupError(error.message);
+  }
+
+  redirect("/parent/household?saved=1");
+}
+
+export async function updateParentRoleAction(formData: FormData) {
+  const parsed = updateParentRoleSchema.safeParse({
+    parentUserId: formData.get("parentUserId"),
+    role: formData.get("role"),
+  });
+
+  if (!parsed.success) {
+    householdSetupError("Choose a valid parent role.");
+  }
+
+  const { householdId, profile, supabase } = await requireAdminHousehold();
+
+  if (parsed.data.parentUserId === profile.id) {
+    householdSetupError("Admins cannot change their own household role.");
+  }
+
+  const { error } = await supabase
+    .from("household_memberships")
+    .update({ role: parsed.data.role })
+    .eq("household_id", householdId)
+    .eq("user_id", parsed.data.parentUserId)
+    .in("role", ["admin", "parent"]);
+
+  if (error) {
+    householdSetupError(error.message);
+  }
+
+  redirect("/parent/household?saved=1");
+}
