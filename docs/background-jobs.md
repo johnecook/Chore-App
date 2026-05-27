@@ -39,3 +39,13 @@ Calls `public.expire_overdue_chore_instances()`.
 The function marks open `assigned`, `available`, and `rejected` chore instances as `expired` after their due window closes. If an instance has no explicit `due_window_end`, it expires after the household-local occurrence day ends.
 
 The function returns the number of instances expired for observability in `cron.job_run_details`.
+
+### `generate-recurring-chore-instances`
+
+Schedule: hourly at minute 7.
+
+Calls `public.generate_chore_instances_for_range(current_date, current_date + 14)`.
+
+The function creates daily, weekly, and interval chore instances for selected-child, all-eligible-children, and up-for-grabs templates. Existing unique indexes make the job idempotent, so reruns skip already-created instances.
+
+Child-specific generation respects household availability windows and date overrides. When no availability window exists for a child, the child is treated as available so single-household setups do not require an availability pattern before chores can appear.
