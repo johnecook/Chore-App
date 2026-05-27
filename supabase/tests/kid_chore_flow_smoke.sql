@@ -5,8 +5,10 @@ do $$
 declare
   parent_id uuid := '00000000-0000-4000-8000-000000000701';
   child_id uuid := '00000000-0000-4000-8000-000000000702';
+  other_child_id uuid := '00000000-0000-4000-8000-000000000703';
   target_household_id uuid;
   target_child_profile_id uuid;
+  other_child_profile_id uuid;
   selected_template_id uuid;
   up_for_grabs_template_id uuid;
   selected_instance_id uuid;
@@ -14,6 +16,8 @@ declare
   claim_id uuid;
   selected_submission_id uuid;
   claimed_submission_id uuid;
+  second_claim_rejected boolean := false;
+  wrong_child_submit_rejected boolean := false;
 begin
   insert into auth.users (id, email, raw_user_meta_data, is_sso_user, is_anonymous)
   values
@@ -30,6 +34,13 @@ begin
       jsonb_build_object('app_role', 'child', 'display_name', 'Kid Flow Child'),
       false,
       false
+    ),
+    (
+      other_child_id,
+      'kid-flow-other-child@example.test',
+      jsonb_build_object('app_role', 'child', 'display_name', 'Other Kid Flow Child'),
+      false,
+      false
     );
 
   insert into public.households (name, created_by)
@@ -39,11 +50,16 @@ begin
   insert into public.household_memberships (household_id, user_id, role, is_primary_payout_parent)
   values
     (target_household_id, parent_id, 'admin', true),
-    (target_household_id, child_id, 'child', false);
+    (target_household_id, child_id, 'child', false),
+    (target_household_id, other_child_id, 'child', false);
 
   insert into public.child_profiles (user_id, primary_household_id, created_by)
   values (child_id, target_household_id, parent_id)
   returning id into target_child_profile_id;
+
+  insert into public.child_profiles (user_id, primary_household_id, created_by)
+  values (other_child_id, target_household_id, parent_id)
+  returning id into other_child_profile_id;
 
   perform set_config('request.jwt.claim.sub', parent_id::text, true);
 
@@ -122,6 +138,45 @@ begin
   ) then
     raise exception 'Expected up-for-grabs chore to become assigned to child';
   end if;
+
+  perform set_config('request.jwt.claim.sub', other_child_id::text, true);
+
+  begin
+    perform public.claim_chore_instance(available_instance_id);
+  exception
+    when others then
+      second_claim_rejected := true;
+  end;
+
+  if not second_claim_rejected then
+    raise exception 'Expected second child claim to be rejected';
+  end if;
+
+  begin
+    perform public.submit_chore_instance(
+      available_instance_id,
+      'Trying to submit another child claim',
+      null
+    );
+  exception
+    when others then
+      wrong_child_submit_rejected := true;
+  end;
+
+  if not wrong_child_submit_rejected then
+    raise exception 'Expected other child submit to be rejected';
+  end if;
+
+  if exists (
+    select 1
+    from public.chore_claims claim
+    where claim.instance_id = available_instance_id
+      and claim.child_profile_id = other_child_profile_id
+  ) then
+    raise exception 'Other child should not have a claim row';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', child_id::text, true);
 
   selected_submission_id := public.submit_chore_instance(
     selected_instance_id,
