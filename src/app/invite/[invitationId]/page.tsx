@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { acceptChildInvitationAction } from "@/app/invite/[invitationId]/actions";
+import {
+  acceptChildInvitationAction,
+  acceptParentInvitationAction,
+} from "@/app/invite/[invitationId]/actions";
 import { SignOutButton } from "@/components/sign-out-button";
 import { requireCurrentProfile } from "@/lib/auth/session";
 
@@ -49,9 +52,16 @@ export default async function InvitePage({
               Accept invite
             </button>
           </form>
+        ) : profile.appRole === "parent" ? (
+          <form action={acceptParentInvitationAction} className="grid max-w-md gap-4">
+            <input name="invitationId" type="hidden" value={routeParams.invitationId} />
+            <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+              Accept invite
+            </button>
+          </form>
         ) : (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
-            This invite is for a child account. Sign out, then sign in with the child account.
+            Sign out, then sign in with the account this invite was sent to.
           </p>
         )}
       </section>

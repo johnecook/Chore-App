@@ -19,6 +19,7 @@ Current migrations:
 - `supabase/migrations/202605260002_chore_template_presets.sql`
 - `supabase/migrations/202605260003_parent_approval_commands.sql`
 - `supabase/migrations/202605260004_optional_household_money.sql`
+- `supabase/migrations/202605260005_parent_invites.sql`
 
 ## Foundation scope
 
@@ -61,6 +62,7 @@ Notifications and audit logs come next.
 - `role` is `admin`, `parent`, or `child`.
 - `is_primary_payout_parent` marks the one parent/admin responsible for payout closeout for children whose primary household is that household when money features are enabled.
 - Partial unique index enforces at most one primary payout parent per household.
+- Partial unique index enforces at most one parent/admin household membership per parent account. Child memberships can still span households.
 - A check constraint prevents child-role memberships from being primary payout parent.
 
 ### `child_profiles`
@@ -180,7 +182,7 @@ These models are not MVP implementation requirements, but the architecture shoul
 
 ### `household_invitations`
 - Parent-created invitation records for adding household members.
-- Current MVP flow supports child invitations.
+- Current MVP flow supports child and parent invitations.
 - Open invitations are unique by household, lowercased email, and role.
 - Acceptance records `accepted_at` and `accepted_by`; revocation records `revoked_at`.
 - The child acceptance command verifies the signed-in child's Auth email matches the invited email.
@@ -207,10 +209,17 @@ The first service-layer commands live as database RPC functions so multi-row sta
 
 `create_child_invitation` creates an open child invite for a household parent.
 
+`create_parent_invitation` creates an open parent invite for a household admin.
+
 `accept_child_invitation` lets the signed-in invited child accept the invite and atomically creates:
 - child household membership
 - child profile, if the child does not already have one
 - accepted invitation metadata
+
+`accept_parent_invitation` lets the signed-in invited parent accept the invite and atomically creates:
+- parent household membership
+- accepted invitation metadata
+- removal of any previous parent/admin household membership for that parent account
 
 `revoke_household_invitation` lets a household parent revoke an unaccepted invite.
 

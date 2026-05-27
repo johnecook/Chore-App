@@ -33,3 +33,25 @@ export async function acceptChildInvitationAction(formData: FormData) {
 
   redirect("/kid");
 }
+
+export async function acceptParentInvitationAction(formData: FormData) {
+  const rawInvitationId = String(formData.get("invitationId") ?? "");
+  const parsed = acceptInvitationSchema.safeParse({
+    invitationId: rawInvitationId,
+  });
+
+  if (!parsed.success) {
+    inviteError(rawInvitationId, "This invitation link is not valid.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("accept_parent_invitation", {
+    target_invitation_id: parsed.data.invitationId,
+  });
+
+  if (error) {
+    inviteError(parsed.data.invitationId, error.message);
+  }
+
+  redirect("/parent");
+}

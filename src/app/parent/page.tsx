@@ -5,7 +5,6 @@ import {
   closeOutPayoutAction,
   rejectSubmissionAction,
 } from "@/app/parent/actions";
-import { createChildInviteAction } from "@/app/parent/children/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -240,36 +239,18 @@ export default async function ParentHomePage({
         </header>
 
         {!hasChildren ? (
-          <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
-            <summary className="cursor-pointer text-xl font-semibold">Invite a child</summary>
-            <form action={createChildInviteAction} className="mt-4 grid max-w-md gap-4">
-              <p className="text-base text-[var(--muted)]">
-                Add your first child before creating chore templates.
-              </p>
-              <label className="grid gap-2 text-lg font-semibold">
-                Child name
-                <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  name="childName"
-                  required
-                  type="text"
-                />
-              </label>
-              <label className="grid gap-2 text-lg font-semibold">
-                Child email
-                <input
-                  autoComplete="email"
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  name="childEmail"
-                  required
-                  type="email"
-                />
-              </label>
-              <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                Create invite
-              </button>
-            </form>
-          </details>
+          <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
+            <h2 className="text-xl font-semibold">Set up household members</h2>
+            <p className="text-base text-[var(--muted)]">
+              Add your first child before creating chore templates.
+            </p>
+            <Link
+              className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
+              href="/parent/household"
+            >
+              Open household
+            </Link>
+          </section>
         ) : null}
 
         {params.error ? (
@@ -510,7 +491,7 @@ export default async function ParentHomePage({
                   <Link
                     aria-label="Invite child"
                     className="inline-grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--line)] bg-white text-2xl font-semibold text-[var(--accent-strong)]"
-                    href="/parent/children"
+                    href="/parent/household"
                   >
                     +
                   </Link>

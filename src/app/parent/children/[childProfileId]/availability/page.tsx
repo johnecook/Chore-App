@@ -66,7 +66,7 @@ export default async function ChildAvailabilityPage({
   }
 
   if (!childProfile) {
-    redirect("/parent/children");
+    redirect("/parent/household");
   }
 
   const [{ data: childUser, error: profileError }, { data: availabilityWindow, error: windowError }, { data: overrides, error: overrideError }] =

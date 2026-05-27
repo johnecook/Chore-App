@@ -685,7 +685,20 @@ export type Database = {
         };
         Returns: string;
       };
+      create_parent_invitation: {
+        Args: {
+          target_household_id: string;
+          parent_email: string;
+        };
+        Returns: string;
+      };
       accept_child_invitation: {
+        Args: {
+          target_invitation_id: string;
+        };
+        Returns: string;
+      };
+      accept_parent_invitation: {
         Args: {
           target_invitation_id: string;
         };

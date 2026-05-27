@@ -71,6 +71,7 @@ These should be covered by automated tests where possible.
 - Only household parents can approve submissions for that earning household.
 - Payout closeout permissions are scoped to the child's payout household when money is enabled.
 - A child has exactly one primary household at a time.
+- A parent account has at most one parent/admin household membership at a time.
 - A money-enabled household has exactly one primary payout parent at a time.
 - A responsibilities/routines-only household can complete setup without payout parent or pay cycle requirements.
 - Changing primary household or payout parent affects future credits only.
@@ -225,4 +226,5 @@ Add notable bugs here as they are found. Each entry should include the bug, the 
 - `supabase/tests/onboarding_smoke.sql` exercises parent household creation with admin membership, primary payout parent, and biweekly pay cycle setup.
 - `supabase/tests/optional_money_smoke.sql` exercises chores-only household setup, paid chore rejection when money is disabled, and unpaid chore approval without ledger/pay-period writes.
 - `supabase/tests/child_invite_smoke.sql` exercises parent child-invite creation and child acceptance into household membership and child profile.
+- `supabase/tests/parent_invite_smoke.sql` exercises admin parent-invite creation, invited parent acceptance into household membership, and disconnection from a previous parent household.
 - `supabase/tests/availability_smoke.sql` exercises parent upsert of a child base availability pattern, override creation, and override deletion.
