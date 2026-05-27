@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signUpAction } from "@/app/auth/actions";
+import { PasswordField } from "@/components/password-field";
 
 export default async function SignUpPage({
   searchParams,
@@ -50,17 +51,12 @@ export default async function SignUpPage({
             />
           </label>
 
-          <label className="grid gap-2 text-lg font-semibold">
-            Password
-            <input
-              autoComplete="new-password"
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-              minLength={8}
-              name="password"
-              required
-              type="password"
-            />
-          </label>
+          <PasswordField
+            autoComplete="new-password"
+            label="Password"
+            minLength={8}
+            name="password"
+          />
 
           <fieldset className="grid gap-3">
             <legend className="text-lg font-semibold">Account type</legend>

@@ -88,7 +88,7 @@ function ChoreSubmitCard({
         ) : null}
         {instance.photo_required_snapshot ? <span>Photo required</span> : null}
       </div>
-      <form action={submitChoreAction} className="grid gap-3">
+      <form action={submitChoreAction} className="grid gap-3" encType="multipart/form-data">
         <input name="instanceId" type="hidden" value={instance.id} />
         <label className="grid gap-2 text-base font-semibold">
           Note
@@ -102,11 +102,11 @@ function ChoreSubmitCard({
           <label className="grid gap-2 text-base font-semibold">
             Photo proof
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-              name="photoStoragePath"
-              placeholder="Photo proof placeholder"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg file:mr-4 file:rounded-md file:border-0 file:bg-[var(--background)] file:px-3 file:py-2 file:text-base file:font-semibold file:text-[var(--accent-strong)]"
+              name="photo"
               required
-              type="text"
+              type="file"
             />
           </label>
         ) : null}

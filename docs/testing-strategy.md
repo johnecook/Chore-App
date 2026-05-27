@@ -217,7 +217,7 @@ Add notable bugs here as they are found. Each entry should include the bug, the 
 
 ## 9) UI polish backlog
 
-- Add show/hide password controls to sign-in and sign-up password fields.
+- None yet.
 
 ## 10) Current local SQL smoke tests
 
