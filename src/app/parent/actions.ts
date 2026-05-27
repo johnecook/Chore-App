@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   approveChoreSubmissionForCurrentPeriod,
   closeOutPayout,
+  deleteSubmissionPhoto,
   rejectChoreSubmission,
 } from "@/lib/supabase/chore-commands";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,6 +24,10 @@ const closeOutPayoutSchema = z.object({
   childProfileId: z.uuid(),
   payPeriodId: z.uuid(),
   note: z.string().trim().max(500).optional(),
+});
+
+const deleteSubmissionPhotoSchema = z.object({
+  submissionId: z.uuid(),
 });
 
 function parentDashboardError(message: string): never {
@@ -109,4 +114,24 @@ export async function closeOutPayoutAction(formData: FormData) {
   }
 
   redirect(`/parent?paid=${payoutId}`);
+}
+
+export async function deleteSubmissionPhotoAction(formData: FormData) {
+  const parsed = deleteSubmissionPhotoSchema.safeParse({
+    submissionId: formData.get("submissionId"),
+  });
+
+  if (!parsed.success) {
+    parentDashboardError("That photo could not be removed.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    await deleteSubmissionPhoto(supabase, parsed.data.submissionId);
+  } catch (error) {
+    parentDashboardError(error instanceof Error ? error.message : "Could not remove photo.");
+  }
+
+  redirect("/parent?photoDeleted=1");
 }

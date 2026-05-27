@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
   closeOutPayoutAction,
+  deleteSubmissionPhotoAction,
   rejectSubmissionAction,
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
@@ -19,6 +20,7 @@ export default async function ParentHomePage({
     createdChore?: string;
     error?: string;
     paid?: string;
+    photoDeleted?: string;
     rejected?: string;
   }>;
 }) {
@@ -151,7 +153,9 @@ export default async function ParentHomePage({
   const { data: submissions, error: submissionError } = submittedInstanceIds.length
     ? await supabase
         .from("chore_submissions")
-        .select("id, instance_id, note, photo_storage_path, attempt_number, submitted_at")
+        .select(
+          "id, instance_id, note, photo_storage_path, photo_deleted_at, attempt_number, submitted_at",
+        )
         .in("instance_id", submittedInstanceIds)
         .order("attempt_number", { ascending: false })
     : { data: [], error: null };
@@ -161,7 +165,30 @@ export default async function ParentHomePage({
   }
 
   const latestSubmissionByInstanceId = new Map(
-    submissions?.map((submission) => [submission.instance_id, submission]) ?? [],
+    submissions?.reduce<Array<[string, (typeof submissions)[number]]>>((rows, submission) => {
+      if (!rows.some(([instanceId]) => instanceId === submission.instance_id)) {
+        rows.push([submission.instance_id, submission]);
+      }
+
+      return rows;
+    }, []) ?? [],
+  );
+  const photoSubmissions =
+    submissions?.filter(
+      (submission) => submission.photo_storage_path && !submission.photo_deleted_at,
+    ) ?? [];
+  const signedPhotoUrlBySubmissionId = new Map(
+    (
+      await Promise.all(
+        photoSubmissions.map(async (submission) => {
+          const { data } = await supabase.storage
+            .from("chore-submission-photos")
+            .createSignedUrl(submission.photo_storage_path ?? "", 600);
+
+          return data?.signedUrl ? ([submission.id, data.signedUrl] as const) : null;
+        }),
+      )
+    ).filter((row): row is readonly [string, string] => row !== null),
   );
   const { data: approvedLedger, error: approvedLedgerError } = childProfiles.length && moneyFeaturesEnabled
     ? await supabase
@@ -283,6 +310,12 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
+        {params.photoDeleted ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Photo removed.
+          </p>
+        ) : null}
+
         {hasChildren ? (
           <>
             {moneyFeaturesEnabled ? (
@@ -378,10 +411,35 @@ export default async function ParentHomePage({
                             {submission?.note ? (
                               <p className="text-base">{submission.note}</p>
                             ) : null}
-                            {submission?.photo_storage_path ? (
-                              <p className="break-all text-base text-[var(--muted)]">
-                                Photo: {submission.photo_storage_path}
-                              </p>
+                            {submission?.photo_storage_path && !submission.photo_deleted_at ? (
+                              <div className="grid gap-3">
+                                {signedPhotoUrlBySubmissionId.get(submission.id) ? (
+                                  <a
+                                    className="block overflow-hidden rounded-lg border border-[var(--line)] bg-white"
+                                    href={signedPhotoUrlBySubmissionId.get(submission.id)}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    <img
+                                      alt={`Photo proof for ${
+                                        templateTitleById.get(instance.template_id) ?? "chore"
+                                      }`}
+                                      className="max-h-80 w-full object-contain"
+                                      src={signedPhotoUrlBySubmissionId.get(submission.id)}
+                                    />
+                                  </a>
+                                ) : (
+                                  <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base text-[var(--muted)]">
+                                    Photo proof could not be loaded.
+                                  </p>
+                                )}
+                                <form action={deleteSubmissionPhotoAction}>
+                                  <input name="submissionId" type="hidden" value={submission.id} />
+                                  <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-base font-semibold text-[var(--danger)]">
+                                    Remove photo
+                                  </button>
+                                </form>
+                              </div>
                             ) : null}
                           </div>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signInAction } from "@/app/auth/actions";
+import { PasswordField } from "@/components/password-field";
 
 export default async function SignInPage({
   searchParams,
@@ -39,16 +40,7 @@ export default async function SignInPage({
             />
           </label>
 
-          <label className="grid gap-2 text-lg font-semibold">
-            Password
-            <input
-              autoComplete="current-password"
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-              name="password"
-              required
-              type="password"
-            />
-          </label>
+          <PasswordField autoComplete="current-password" label="Password" name="password" />
 
           <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
             Sign in
