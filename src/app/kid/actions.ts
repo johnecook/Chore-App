@@ -4,17 +4,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { claimChoreInstance, submitChoreInstance } from "@/lib/supabase/chore-commands";
 import { requireCurrentProfile } from "@/lib/auth/session";
+import {
+  CHORE_SUBMISSION_PHOTO_BUCKET,
+  chorePhotoStoragePath,
+  chorePhotoValidationError,
+  removeStoredChorePhotos,
+} from "@/lib/supabase/chore-photo-storage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const PHOTO_BUCKET = "chore-submission-photos";
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-const PHOTO_EXTENSIONS = new Map([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/webp", "webp"],
-  ["image/heic", "heic"],
-  ["image/heif", "heif"],
-]);
 
 const instanceSchema = z.object({
   instanceId: z.uuid(),
@@ -35,23 +31,6 @@ function optionalString(value: FormDataEntryValue | null) {
 
 function optionalFile(value: FormDataEntryValue | null) {
   return value instanceof File && value.size > 0 ? value : undefined;
-}
-
-function photoValidationError(file: File) {
-  if (file.size > MAX_PHOTO_BYTES) {
-    return "Photo proof must be 5 MB or smaller.";
-  }
-
-  if (!PHOTO_EXTENSIONS.has(file.type)) {
-    return "Photo proof must be a JPEG, PNG, WebP, HEIC, or HEIF image.";
-  }
-
-  return null;
-}
-
-function photoStoragePath(profileId: string, instanceId: string, file: File) {
-  const extension = PHOTO_EXTENSIONS.get(file.type) ?? "jpg";
-  return `${profileId}/${instanceId}/${crypto.randomUUID()}.${extension}`;
 }
 
 export async function claimChoreAction(formData: FormData) {
@@ -86,7 +65,7 @@ export async function submitChoreAction(formData: FormData) {
     kidError("Check the submission and try again.");
   }
 
-  const validationError = photo ? photoValidationError(photo) : null;
+  const validationError = photo ? chorePhotoValidationError(photo) : null;
 
   if (validationError) {
     kidError(validationError);
@@ -133,9 +112,9 @@ export async function submitChoreAction(formData: FormData) {
   let uploadedPhotoPath: string | null = null;
 
   if (photo) {
-    uploadedPhotoPath = photoStoragePath(profile.id, parsed.data.instanceId, photo);
+    uploadedPhotoPath = chorePhotoStoragePath(profile.id, parsed.data.instanceId, photo);
     const { error: uploadError } = await supabase.storage
-      .from(PHOTO_BUCKET)
+      .from(CHORE_SUBMISSION_PHOTO_BUCKET)
       .upload(uploadedPhotoPath, photo, {
         contentType: photo.type,
         upsert: false,
@@ -155,6 +134,7 @@ export async function submitChoreAction(formData: FormData) {
       photoStoragePath: uploadedPhotoPath,
     });
   } catch (error) {
+    await removeStoredChorePhotos([uploadedPhotoPath]);
     kidError(error instanceof Error ? error.message : "Could not submit chore.");
   }
 

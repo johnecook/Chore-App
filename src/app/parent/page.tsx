@@ -8,6 +8,7 @@ import {
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
+import { CHORE_SUBMISSION_PHOTO_BUCKET } from "@/lib/supabase/chore-photo-storage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -182,7 +183,7 @@ export default async function ParentHomePage({
       await Promise.all(
         photoSubmissions.map(async (submission) => {
           const { data } = await supabase.storage
-            .from("chore-submission-photos")
+            .from(CHORE_SUBMISSION_PHOTO_BUCKET)
             .createSignedUrl(submission.photo_storage_path ?? "", 600);
 
           return data?.signedUrl ? ([submission.id, data.signedUrl] as const) : null;

@@ -196,8 +196,8 @@ The first service-layer commands live as database RPC functions so multi-row sta
 - `approve_chore_submission(submission_id, pay_period_id, approved_on, feedback)` approves a submitted chore and creates the approved-credit ledger row only for fixed-value chores in money-enabled households.
 - `reject_chore_submission(submission_id, feedback)` rejects a submitted chore and preserves parent feedback.
 - `reopen_chore_instance(instance_id, feedback)` moves rejected or expired chores back to assigned and records the reopen event.
-- `delete_submission_photo(submission_id)` lets a household parent mark a submitted photo deleted without deleting submission history.
-- `close_out_payout(pay_period_id, child_profile_id, note)` creates one payout event, appends the payout ledger row, and marks related submission photos deleted after closeout.
+- `delete_submission_photo(submission_id)` lets a household parent mark a submitted photo deleted without deleting submission history; the parent server action also attempts to remove the stored object.
+- `close_out_payout(pay_period_id, child_profile_id, note)` creates one payout event, appends the payout ledger row, and marks related submission photos deleted after closeout; the parent server action also attempts to remove the stored objects.
 
 `create_chore_credit` and `current_payout_parent_id` are internal helper functions used by command RPCs.
 
@@ -300,6 +300,6 @@ Policies are intentionally conservative and should be reviewed before production
 - Add service-layer generation tests that prove all-eligible and up-for-grabs instances respect custody availability and overrides.
 - Add generated TypeScript wrappers for RPC command calls once Supabase client code is introduced.
 - Add pay-period creation/upsert command so approval flows do not require callers to pre-create periods manually.
-- Add object-storage cleanup job for parent-deleted photos and pay-period retention deletion.
+- Add a retryable object-storage cleanup job for photo object removals that fail during parent deletion or pay-period closeout.
 - Expand onboarding for secondary parent invitations.
 - Add hosted email delivery for invitation links once Supabase email settings are configured.
