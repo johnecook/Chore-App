@@ -277,6 +277,17 @@ export default async function KidHomePage({
     throw new Error(ledgerError.message);
   }
 
+  const { data: unreadNotifications, error: unreadNotificationError } = await supabase
+    .from("notification_events")
+    .select("id")
+    .eq("recipient_profile_id", profile.id)
+    .is("read_at", null);
+
+  if (unreadNotificationError) {
+    throw new Error(unreadNotificationError.message);
+  }
+
+  const unreadNotificationCount = unreadNotifications?.length ?? 0;
   const approvedBalanceCents =
     ledgerRows?.reduce((total, ledger) => total + ledger.amount_cents, 0) ?? 0;
   const waitingValueCents = moneyFeaturesEnabled ? waitingChores.reduce(
@@ -303,7 +314,7 @@ export default async function KidHomePage({
                 className="text-base font-semibold text-[var(--accent-strong)]"
                 href="/notifications"
               >
-                Notifications
+                Notifications{unreadNotificationCount ? ` (${unreadNotificationCount})` : ""}
               </Link>
               <SignOutButton />
             </div>
