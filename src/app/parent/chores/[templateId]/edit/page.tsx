@@ -156,7 +156,7 @@ export default async function EditChoreTemplatePage({
               </button>
               <a
                 className="inline-flex min-h-12 items-center rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-lg font-semibold"
-                href="/parent"
+                href="/parent/chores"
               >
                 Cancel
               </a>

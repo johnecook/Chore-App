@@ -88,5 +88,5 @@ export async function updateChoreTemplateAction(formData: FormData) {
     );
   }
 
-  redirect(`/parent?updatedTemplate=${templateId}`);
+  redirect(`/parent/chores?updatedTemplate=${templateId}`);
 }

@@ -162,5 +162,5 @@ export async function createChoreTemplateAction(formData: FormData) {
     choreSetupError(error instanceof Error ? error.message : "Could not create chore.");
   }
 
-  redirect(`/parent?createdChore=${templateId}`);
+  redirect(`/parent/chores?createdChore=${templateId}`);
 }

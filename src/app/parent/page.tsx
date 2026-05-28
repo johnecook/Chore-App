@@ -2,10 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
-  deactivateTemplateAction,
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
-  reopenChoreAction,
   syncScheduleAction,
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
@@ -15,10 +13,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-function addDays(date: string, days: number) {
-  const next = new Date(`${date}T00:00:00.000Z`);
-  next.setUTCDate(next.getUTCDate() + days);
-  return next.toISOString().slice(0, 10);
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
 }
 
 export default async function ParentHomePage({
@@ -26,16 +25,10 @@ export default async function ParentHomePage({
 }: {
   searchParams: Promise<{
     approved?: string;
-    adjusted?: string;
-    createdChore?: string;
-    deactivatedTemplate?: string;
     error?: string;
-    paid?: string;
     photoDeleted?: string;
     rejected?: string;
-    reopened?: string;
     synced?: string;
-    updatedTemplate?: string;
   }>;
 }) {
   const [profile, householdId, params] = await Promise.all([
@@ -65,10 +58,7 @@ export default async function ParentHomePage({
 
   const childUserIds = childMemberships?.map((membership) => membership.user_id) ?? [];
   const { data: childProfiles, error: childProfileError } = childUserIds.length
-    ? await supabase
-        .from("child_profiles")
-        .select("id, user_id")
-        .in("user_id", childUserIds)
+    ? await supabase.from("child_profiles").select("id, user_id").in("user_id", childUserIds)
     : { data: [], error: null };
 
   if (childProfileError) {
@@ -76,10 +66,7 @@ export default async function ParentHomePage({
   }
 
   const { data: childUsers, error: childUserError } = childUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", childUserIds)
+    ? await supabase.from("profiles").select("id, display_name").in("id", childUserIds)
     : { data: [], error: null };
 
   if (childUserError) {
@@ -93,50 +80,8 @@ export default async function ParentHomePage({
       name: childUser?.display_name ?? "Child",
     };
   });
-  const childNameById = new Map(children.map((child) => [child.id, child.name]));
-
   const hasChildren = children.length > 0;
   const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = addDays(today, 1);
-  const { data: choreTemplates, error: templateError } = await supabase
-    .from("chore_templates")
-    .select("id, title, schedule_type, active, created_at")
-    .eq("household_id", householdId)
-    .eq("active", true)
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  if (templateError) {
-    throw new Error(templateError.message);
-  }
-
-  const { data: remainingToday, error: remainingError } = await supabase
-    .from("chore_instances")
-    .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
-    .eq("earning_household_id", householdId)
-    .eq("occurrence_date", today)
-    .in("status", ["assigned", "available", "rejected"])
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  if (remainingError) {
-    throw new Error(remainingError.message);
-  }
-
-  const { data: upcomingInstances, error: upcomingError } = await supabase
-    .from("chore_instances")
-    .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
-    .eq("earning_household_id", householdId)
-    .gt("occurrence_date", today)
-    .lte("occurrence_date", tomorrow)
-    .in("status", ["assigned", "available", "rejected"])
-    .order("occurrence_date", { ascending: true })
-    .order("created_at", { ascending: true })
-    .limit(20);
-
-  if (upcomingError) {
-    throw new Error(upcomingError.message);
-  }
 
   const { data: waitingApproval, error: approvalError } = await supabase
     .from("chore_instances")
@@ -146,40 +91,61 @@ export default async function ParentHomePage({
     .eq("earning_household_id", householdId)
     .eq("status", "submitted")
     .order("updated_at", { ascending: false })
-    .limit(10);
+    .limit(25);
 
   if (approvalError) {
     throw new Error(approvalError.message);
   }
 
-  const { data: recentHistory, error: recentHistoryError } = await supabase
+  const { data: remainingToday, error: remainingError } = await supabase
+    .from("chore_instances")
+    .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
+    .eq("earning_household_id", householdId)
+    .eq("occurrence_date", today)
+    .in("status", ["assigned", "rejected"])
+    .order("created_at", { ascending: false });
+
+  if (remainingError) {
+    throw new Error(remainingError.message);
+  }
+
+  const { data: availableToday, error: availableError } = await supabase
+    .from("chore_instances")
+    .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
+    .eq("earning_household_id", householdId)
+    .eq("occurrence_date", today)
+    .eq("status", "available")
+    .eq("up_for_grabs_slot", true)
+    .order("created_at", { ascending: false });
+
+  if (availableError) {
+    throw new Error(availableError.message);
+  }
+
+  const { data: completedToday, error: completedError } = await supabase
     .from("chore_instances")
     .select(
       "id, template_id, assigned_child_profile_id, status, occurrence_date, updated_at, value_model_snapshot, amount_cents_snapshot",
     )
     .eq("earning_household_id", householdId)
-    .in("status", ["approved", "rejected", "expired"])
-    .order("updated_at", { ascending: false })
-    .limit(10);
+    .eq("occurrence_date", today)
+    .eq("status", "approved")
+    .order("updated_at", { ascending: false });
 
-  if (recentHistoryError) {
-    throw new Error(recentHistoryError.message);
+  if (completedError) {
+    throw new Error(completedError.message);
   }
 
   const dashboardTemplateIds = [
     ...new Set([
-      ...(choreTemplates?.map((template) => template.id) ?? []),
-      ...(remainingToday?.map((instance) => instance.template_id) ?? []),
-      ...(upcomingInstances?.map((instance) => instance.template_id) ?? []),
       ...(waitingApproval?.map((instance) => instance.template_id) ?? []),
-      ...(recentHistory?.map((instance) => instance.template_id) ?? []),
+      ...(remainingToday?.map((instance) => instance.template_id) ?? []),
+      ...(availableToday?.map((instance) => instance.template_id) ?? []),
+      ...(completedToday?.map((instance) => instance.template_id) ?? []),
     ]),
   ];
   const { data: dashboardTemplates, error: dashboardTemplateError } = dashboardTemplateIds.length
-    ? await supabase
-        .from("chore_templates")
-        .select("id, title")
-        .in("id", dashboardTemplateIds)
+    ? await supabase.from("chore_templates").select("id, title").in("id", dashboardTemplateIds)
     : { data: [], error: null };
 
   if (dashboardTemplateError) {
@@ -236,11 +202,20 @@ export default async function ParentHomePage({
       <div className="grid gap-8 py-6">
         <header className="grid gap-4">
           <ParentNav />
-          <div className="grid gap-2">
-            <h1 className="text-3xl font-semibold leading-tight">Parent dashboard</h1>
-            <p className="text-lg text-[var(--muted)]">
-              {profile.displayName}, review what needs attention today.
-            </p>
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="grid gap-2">
+                <h1 className="text-3xl font-semibold leading-tight">Parent dashboard</h1>
+                <p className="text-lg text-[var(--muted)]">
+                  {profile.displayName}, review what needs attention today.
+                </p>
+              </div>
+              <form action={syncScheduleAction}>
+                <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
+                  Sync
+                </button>
+              </form>
+            </div>
           </div>
         </header>
 
@@ -265,33 +240,9 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
-        {params.createdChore ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Chore created.
-          </p>
-        ) : null}
-
-        {params.deactivatedTemplate ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Chore template deactivated.
-          </p>
-        ) : null}
-
-        {params.updatedTemplate ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Chore template updated.
-          </p>
-        ) : null}
-
         {params.approved ? (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
             Chore approved.
-          </p>
-        ) : null}
-
-        {params.adjusted ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Money adjustment added.
           </p>
         ) : null}
 
@@ -301,21 +252,9 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
-        {params.paid ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Payout marked paid.
-          </p>
-        ) : null}
-
         {params.photoDeleted ? (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
             Photo removed.
-          </p>
-        ) : null}
-
-        {params.reopened ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
-            Chore reopened.
           </p>
         ) : null}
 
@@ -326,280 +265,223 @@ export default async function ParentHomePage({
         ) : null}
 
         {hasChildren ? (
-          <>
-            <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
-              <summary className="cursor-pointer text-xl font-semibold">Chores</summary>
-              <div className="mt-4 grid gap-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold">Waiting for approval</h2>
-                  <div className="flex flex-wrap gap-2">
-                    <form action={syncScheduleAction}>
-                      <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
-                        Sync
-                      </button>
-                    </form>
-                    <Link
-                      aria-label="Add chore"
-                      className="inline-grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--line)] bg-white text-2xl font-semibold text-[var(--accent-strong)]"
-                      href="/parent/chores/new"
-                    >
-                      +
-                    </Link>
-                  </div>
-                </div>
-                {waitingApproval?.length ? (
-                  <div className="grid gap-3">
-                    {waitingApproval.map((instance) => {
-                      const submission = latestSubmissionByInstanceId.get(instance.id);
+          <section aria-labelledby="today-by-child-heading" className="grid gap-3">
+            <h2 id="today-by-child-heading" className="text-xl font-semibold">
+              Today by child
+            </h2>
+            <div className="grid gap-3">
+              {children.map((child) => {
+                const approvalItems =
+                  waitingApproval?.filter(
+                    (instance) => instance.assigned_child_profile_id === child.id,
+                  ) ?? [];
+                const remainingItems =
+                  remainingToday?.filter(
+                    (instance) => instance.assigned_child_profile_id === child.id,
+                  ) ?? [];
+                const completedItems =
+                  completedToday?.filter(
+                    (instance) => instance.assigned_child_profile_id === child.id,
+                  ) ?? [];
 
-                      return (
-                        <article
-                          className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          id={`approval-${instance.id}`}
-                          key={instance.id}
-                        >
-                          <div className="grid gap-1">
-                            <h3 className="text-lg font-semibold">
-                              {templateTitleById.get(instance.template_id) ?? "Chore"}
-                            </h3>
-                            <p className="text-base text-[var(--muted)]">
-                              {childNameById.get(instance.assigned_child_profile_id ?? "") ?? "Child"} submitted
-                              {instance.value_model_snapshot === "fixed"
-                                ? ` • $${(instance.amount_cents_snapshot / 100).toFixed(2)}`
-                                : ""}
-                            </p>
-                            {submission?.note ? (
-                              <p className="text-base">{submission.note}</p>
-                            ) : null}
-                            {submission?.photo_storage_path && !submission.photo_deleted_at ? (
-                              <div className="grid gap-3">
-                                {signedPhotoUrlBySubmissionId.get(submission.id) ? (
-                                  <a
-                                    className="block overflow-hidden rounded-lg border border-[var(--line)] bg-white"
-                                    href={signedPhotoUrlBySubmissionId.get(submission.id)}
-                                    rel="noreferrer"
-                                    target="_blank"
-                                  >
-                                    <img
-                                      alt={`Photo proof for ${
-                                        templateTitleById.get(instance.template_id) ?? "chore"
-                                      }`}
-                                      className="max-h-80 w-full object-contain"
-                                      src={signedPhotoUrlBySubmissionId.get(submission.id)}
-                                    />
-                                  </a>
-                                ) : (
-                                  <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base text-[var(--muted)]">
-                                    Photo proof could not be loaded.
-                                  </p>
-                                )}
-                                <form action={deleteSubmissionPhotoAction}>
-                                  <input name="submissionId" type="hidden" value={submission.id} />
-                                  <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-base font-semibold text-[var(--danger)]">
-                                    Remove photo
-                                  </button>
-                                </form>
-                              </div>
-                            ) : null}
+                return (
+                  <details
+                    className="grid rounded-lg border border-[var(--line)] bg-white p-4"
+                    key={child.id}
+                    open
+                  >
+                    <summary className="cursor-pointer text-xl font-semibold">
+                      {child.name}
+                    </summary>
+                    <div className="mt-4 grid gap-6">
+                      <section className="grid gap-3">
+                        <h3 className="text-lg font-semibold">Items for approval</h3>
+                        {approvalItems.length ? (
+                          <div className="grid gap-3">
+                            {approvalItems.map((instance) => {
+                              const submission = latestSubmissionByInstanceId.get(instance.id);
+
+                              return (
+                                <article
+                                  className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                                  id={`approval-${instance.id}`}
+                                  key={instance.id}
+                                >
+                                  <div className="grid gap-1">
+                                    <h4 className="text-lg font-semibold">
+                                      {templateTitleById.get(instance.template_id) ?? "Chore"}
+                                    </h4>
+                                    <p className="text-base text-[var(--muted)]">
+                                      Submitted
+                                      {instance.value_model_snapshot === "fixed"
+                                        ? ` • ${formatMoney(instance.amount_cents_snapshot)}`
+                                        : ""}
+                                    </p>
+                                    {submission?.note ? (
+                                      <p className="text-base">{submission.note}</p>
+                                    ) : null}
+                                    {submission?.photo_storage_path && !submission.photo_deleted_at ? (
+                                      <div className="grid gap-3">
+                                        {signedPhotoUrlBySubmissionId.get(submission.id) ? (
+                                          <a
+                                            className="block overflow-hidden rounded-lg border border-[var(--line)] bg-white"
+                                            href={signedPhotoUrlBySubmissionId.get(submission.id)}
+                                            rel="noreferrer"
+                                            target="_blank"
+                                          >
+                                            <img
+                                              alt={`Photo proof for ${
+                                                templateTitleById.get(instance.template_id) ?? "chore"
+                                              }`}
+                                              className="max-h-80 w-full object-contain"
+                                              src={signedPhotoUrlBySubmissionId.get(submission.id)}
+                                            />
+                                          </a>
+                                        ) : (
+                                          <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base text-[var(--muted)]">
+                                            Photo proof could not be loaded.
+                                          </p>
+                                        )}
+                                        <form action={deleteSubmissionPhotoAction}>
+                                          <input name="submissionId" type="hidden" value={submission.id} />
+                                          <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-base font-semibold text-[var(--danger)]">
+                                            Remove photo
+                                          </button>
+                                        </form>
+                                      </div>
+                                    ) : null}
+                                  </div>
+
+                                  {submission ? (
+                                    <div className="grid gap-3">
+                                      <form action={approveSubmissionAction} className="grid gap-3">
+                                        <input name="submissionId" type="hidden" value={submission.id} />
+                                        <label className="grid gap-2 text-base font-semibold">
+                                          Approval note
+                                          <input
+                                            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                            maxLength={500}
+                                            name="feedback"
+                                            type="text"
+                                          />
+                                        </label>
+                                        <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+                                          Approve
+                                        </button>
+                                      </form>
+
+                                      <form action={rejectSubmissionAction} className="grid gap-3">
+                                        <input name="submissionId" type="hidden" value={submission.id} />
+                                        <label className="grid gap-2 text-base font-semibold">
+                                          Send back note
+                                          <input
+                                            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                            maxLength={500}
+                                            name="feedback"
+                                            required
+                                            type="text"
+                                          />
+                                        </label>
+                                        <button className="min-h-12 rounded-lg border border-[var(--danger)] bg-white px-4 py-3 text-lg font-semibold text-[var(--danger)]">
+                                          Send back
+                                        </button>
+                                      </form>
+                                    </div>
+                                  ) : (
+                                    <p className="text-base text-[var(--muted)]">
+                                      Submission details unavailable.
+                                    </p>
+                                  )}
+                                </article>
+                              );
+                            })}
                           </div>
-
-                          {submission ? (
-                            <div className="grid gap-3">
-                              <form action={approveSubmissionAction} className="grid gap-3">
-                                <input name="submissionId" type="hidden" value={submission.id} />
-                                <label className="grid gap-2 text-base font-semibold">
-                                  Approval note
-                                  <input
-                                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                    maxLength={500}
-                                    name="feedback"
-                                    type="text"
-                                  />
-                                </label>
-                                <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
-                                  Approve
-                                </button>
-                              </form>
-
-                              <form action={rejectSubmissionAction} className="grid gap-3">
-                                <input name="submissionId" type="hidden" value={submission.id} />
-                                <label className="grid gap-2 text-base font-semibold">
-                                  Send back note
-                                  <input
-                                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                    maxLength={500}
-                                    name="feedback"
-                                    required
-                                    type="text"
-                                  />
-                                </label>
-                                <button className="min-h-12 rounded-lg border border-[var(--danger)] bg-white px-4 py-3 text-lg font-semibold text-[var(--danger)]">
-                                  Send back
-                                </button>
-                              </form>
-                            </div>
-                          ) : (
-                            <p className="text-base text-[var(--muted)]">Submission details unavailable.</p>
-                          )}
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                    No chores are waiting for approval.
-                  </p>
-                )}
-
-                <div className="grid gap-3">
-                  <h2 className="text-lg font-semibold">Remaining today</h2>
-                  {remainingToday?.length ? (
-                    <div className="grid gap-3">
-                      {remainingToday.map((instance) => (
-                        <article
-                          className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={instance.id}
-                        >
-                          <h3 className="text-lg font-semibold">
-                            {templateTitleById.get(instance.template_id) ?? "Chore"}
-                          </h3>
-                          <p className="text-base text-[var(--muted)]">
-                            {instance.up_for_grabs_slot ? "Available" : "Assigned"}
+                        ) : (
+                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                            Nothing needs approval.
                           </p>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                      No chores are assigned for today yet.
-                    </p>
-                  )}
-                </div>
+                        )}
+                      </section>
 
-                <div className="grid gap-3">
-                  <h2 className="text-lg font-semibold">Upcoming</h2>
-                  {upcomingInstances?.length ? (
-                    <div className="grid gap-3">
-                      {upcomingInstances.map((instance) => (
-                        <article
-                          className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={instance.id}
-                        >
-                          <h3 className="text-lg font-semibold">
-                            {templateTitleById.get(instance.template_id) ?? "Chore"}
-                          </h3>
-                          <p className="text-base text-[var(--muted)]">
-                            {instance.occurrence_date} •{" "}
-                            {instance.up_for_grabs_slot
-                              ? "Available"
-                              : childNameById.get(instance.assigned_child_profile_id ?? "") ?? "Child"}
-                            {instance.status === "rejected" ? " • Needs another try" : ""}
+                      <section className="grid gap-3">
+                        <h3 className="text-lg font-semibold">Items remaining for the day</h3>
+                        {remainingItems.length ? (
+                          <div className="grid gap-3">
+                            {remainingItems.map((instance) => (
+                              <article
+                                className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                                key={instance.id}
+                              >
+                                <h4 className="text-lg font-semibold">
+                                  {templateTitleById.get(instance.template_id) ?? "Chore"}
+                                </h4>
+                                <p className="text-base text-[var(--muted)]">
+                                  {instance.status === "rejected" ? "Needs another try" : "Assigned"}
+                                </p>
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                            Nothing remains for today.
                           </p>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                      No upcoming chores are assigned.
-                    </p>
-                  )}
-                </div>
+                        )}
+                      </section>
 
-                <div className="grid gap-3">
-                  <h2 className="text-lg font-semibold">Recent history</h2>
-                  {recentHistory?.length ? (
-                    <div className="grid gap-3">
-                      {recentHistory.map((instance) => (
-                        <article
-                          className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={instance.id}
-                        >
-                          <div className="grid gap-1">
-                            <h3 className="text-lg font-semibold">
-                              {templateTitleById.get(instance.template_id) ?? "Chore"}
-                            </h3>
-                            <p className="text-base text-[var(--muted)]">
-                              {childNameById.get(instance.assigned_child_profile_id ?? "") ?? "Child"} •{" "}
-                              {instance.status === "approved"
-                                ? "Approved"
-                                : instance.status === "rejected"
-                                  ? "Needs another try"
-                                  : "Missed"}{" "}
-                              on {instance.occurrence_date}
-                              {instance.value_model_snapshot === "fixed"
-                                ? ` • $${(instance.amount_cents_snapshot / 100).toFixed(2)}`
-                                : ""}
-                            </p>
+                      <section className="grid gap-3">
+                        <h3 className="text-lg font-semibold">Completed items</h3>
+                        {completedItems.length ? (
+                          <div className="grid gap-3">
+                            {completedItems.map((instance) => (
+                              <article
+                                className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                                key={instance.id}
+                              >
+                                <h4 className="text-lg font-semibold">
+                                  {templateTitleById.get(instance.template_id) ?? "Chore"}
+                                </h4>
+                                <p className="text-base text-[var(--muted)]">
+                                  Approved
+                                  {instance.value_model_snapshot === "fixed"
+                                    ? ` • ${formatMoney(instance.amount_cents_snapshot)}`
+                                    : ""}
+                                </p>
+                              </article>
+                            ))}
                           </div>
-
-                          {instance.status === "rejected" || instance.status === "expired" ? (
-                            <form action={reopenChoreAction} className="grid gap-3">
-                              <input name="instanceId" type="hidden" value={instance.id} />
-                              <label className="grid gap-2 text-base font-semibold">
-                                Reopen note
-                                <input
-                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                  maxLength={500}
-                                  name="feedback"
-                                  type="text"
-                                />
-                              </label>
-                              <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
-                                Reopen
-                              </button>
-                            </form>
-                          ) : null}
-                        </article>
-                      ))}
+                        ) : (
+                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                            No completed items yet today.
+                          </p>
+                        )}
+                      </section>
                     </div>
-                  ) : (
-                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                      No completed chores yet.
-                    </p>
-                  )}
-                </div>
+                  </details>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
-                <div className="grid gap-3">
-                  <h2 className="text-lg font-semibold">Templates</h2>
-                  {choreTemplates?.length ? (
-                    <div className="grid gap-3">
-                      {choreTemplates.map((template) => (
-                        <article
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={template.id}
-                        >
-                          <div className="grid gap-1">
-                            <h3 className="text-lg font-semibold">{template.title}</h3>
-                            <p className="text-base capitalize text-[var(--muted)]">
-                              {template.schedule_type.replace("_", "-")}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Link
-                              className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold"
-                              href={`/parent/chores/${template.id}/edit`}
-                            >
-                              Edit
-                            </Link>
-                            <form action={deactivateTemplateAction}>
-                              <input name="templateId" type="hidden" value={template.id} />
-                              <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
-                                Deactivate
-                              </button>
-                            </form>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                      No chore templates yet.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </details>
-          </>
+        {availableToday?.length ? (
+          <section aria-labelledby="available-heading" className="grid gap-3">
+            <h2 id="available-heading" className="text-xl font-semibold">
+              Up for grabs today
+            </h2>
+            <div className="grid gap-3">
+              {availableToday.map((instance) => (
+                <article
+                  className="rounded-lg border border-[var(--line)] bg-white p-4"
+                  key={instance.id}
+                >
+                  <h3 className="text-lg font-semibold">
+                    {templateTitleById.get(instance.template_id) ?? "Chore"}
+                  </h3>
+                  <p className="text-base text-[var(--muted)]">Available until claimed.</p>
+                </article>
+              ))}
+            </div>
+          </section>
         ) : null}
       </div>
     </main>

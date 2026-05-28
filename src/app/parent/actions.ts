@@ -46,6 +46,7 @@ const deleteSubmissionPhotoSchema = z.object({
 
 const deactivateTemplateSchema = z.object({
   templateId: z.uuid(),
+  redirectTo: z.enum(["dashboard", "chores"]).optional(),
 });
 
 const manualAdjustmentSchema = z.object({
@@ -252,6 +253,7 @@ export async function deleteSubmissionPhotoAction(formData: FormData) {
 export async function deactivateTemplateAction(formData: FormData) {
   const parsed = deactivateTemplateSchema.safeParse({
     templateId: formData.get("templateId"),
+    redirectTo: optionalString(formData.get("redirectTo")),
   });
 
   if (!parsed.success) {
@@ -276,7 +278,8 @@ export async function deactivateTemplateAction(formData: FormData) {
     parentDashboardError(error instanceof Error ? error.message : "Could not deactivate template.");
   }
 
-  redirect(`/parent?deactivatedTemplate=${templateId}`);
+  const destination = parsed.data.redirectTo === "chores" ? "/parent/chores" : "/parent";
+  redirect(`${destination}?deactivatedTemplate=${templateId}`);
 }
 
 export async function createManualAdjustmentAction(formData: FormData) {

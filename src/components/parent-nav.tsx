@@ -35,9 +35,9 @@ export async function ParentNav() {
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
-          href="/parent/household"
+          href="/parent/chores"
         >
-          Household
+          Chores
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
@@ -59,9 +59,9 @@ export async function ParentNav() {
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
-          href="/parent/chores/new"
+          href="/parent/household"
         >
-          Add chore
+          Household
         </Link>
       </div>
     </nav>
