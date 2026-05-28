@@ -102,7 +102,7 @@ export function ChoreTemplateFormFields({
             onChange={(event) => setScheduleType(event.target.value as ScheduleType)}
             value={scheduleType}
           >
-            <option value="one_off">One-off</option>
+            <option value="one_off">Specific date</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="interval">Every few days</option>
@@ -120,7 +120,7 @@ export function ChoreTemplateFormFields({
         </label>
         {scheduleType === "one_off" ? (
           <label className="grid gap-2 text-lg font-semibold">
-            One-off date
+            Date
             <input
               className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
               defaultValue={defaults.oneOffDate ?? defaults.startDate}

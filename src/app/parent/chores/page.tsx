@@ -55,6 +55,13 @@ function formatTime(value: string | null) {
   return `${hour}:${minutes} ${suffix}`;
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
 function scheduleLabel(template: {
   interval_days: number | null;
   one_off_date: string | null;
@@ -79,7 +86,7 @@ function scheduleLabel(template: {
     return days === 1 ? "Every day" : `Every ${days} days`;
   }
 
-  return template.one_off_date ? `One-off on ${template.one_off_date}` : "One-off";
+  return template.one_off_date ? formatDate(template.one_off_date) : "Specific date";
 }
 
 function dueWindowLabel(template: { due_time_end: string | null; due_time_start: string | null }) {
@@ -180,7 +187,7 @@ export default async function ParentChoresPage({
               <div className="grid gap-2">
                 <h1 className="text-3xl font-semibold leading-tight">Chores</h1>
                 <p className="text-lg text-[var(--muted)]">
-                  Manage recurring chore templates and one-off chore setup.
+                  Manage recurring chores and chores for specific dates.
                 </p>
               </div>
               <Link

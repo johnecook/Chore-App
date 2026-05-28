@@ -49,7 +49,7 @@ const choreTemplateFormSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["oneOffDate"],
-        message: "Choose a one-off date.",
+        message: "Choose a date.",
       });
     }
 

@@ -142,7 +142,7 @@ export default async function NewChorePage({
           <div className="grid gap-2">
             <h1 className="text-3xl font-semibold leading-tight">Add chore</h1>
             <p className="max-w-xl text-lg text-[var(--muted)]">
-              Create a reusable chore template. One-off chores appear for kids immediately.
+              Create a recurring chore or a chore for a specific date.
             </p>
           </div>
         </header>
