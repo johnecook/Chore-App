@@ -747,6 +747,7 @@ export type Database = {
           target_amount_cents: number;
           adjustment_description: string;
           effective_on?: string;
+          target_pay_period_id?: string | null;
         };
         Returns: string;
       };

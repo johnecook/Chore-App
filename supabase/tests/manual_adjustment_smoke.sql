@@ -86,7 +86,8 @@ begin
     target_child_profile_id,
     -100,
     'Correction',
-    '2026-06-03'
+    '2026-06-03',
+    target_pay_period_id
   );
 
   if (

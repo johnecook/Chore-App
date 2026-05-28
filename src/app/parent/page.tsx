@@ -443,6 +443,7 @@ export default async function ParentHomePage({
                             </summary>
                             <form action={createManualAdjustmentAction} className="mt-3 grid gap-3">
                               <input name="childProfileId" type="hidden" value={row.childProfileId} />
+                              <input name="payPeriodId" type="hidden" value={row.payPeriodId} />
                               <label className="grid gap-2 text-base font-semibold">
                                 Direction
                                 <select

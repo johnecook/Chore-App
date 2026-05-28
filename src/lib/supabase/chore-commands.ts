@@ -254,6 +254,7 @@ export function createManualAdjustment(
     amountCents: number;
     description: string;
     effectiveOn?: string;
+    payPeriodId?: string | null;
   },
 ) {
   return unwrapRpcId(
@@ -262,6 +263,7 @@ export function createManualAdjustment(
       target_amount_cents: params.amountCents,
       adjustment_description: params.description,
       effective_on: params.effectiveOn,
+      target_pay_period_id: params.payPeriodId ?? null,
     }),
   );
 }
