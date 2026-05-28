@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
   closeOutPayoutAction,
+  createManualAdjustmentAction,
   deactivateTemplateAction,
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
@@ -26,6 +27,7 @@ export default async function ParentHomePage({
 }: {
   searchParams: Promise<{
     approved?: string;
+    adjusted?: string;
     createdChore?: string;
     deactivatedTemplate?: string;
     error?: string;
@@ -33,6 +35,7 @@ export default async function ParentHomePage({
     photoDeleted?: string;
     rejected?: string;
     reopened?: string;
+    updatedTemplate?: string;
   }>;
 }) {
   const [profile, householdId, params] = await Promise.all([
@@ -299,6 +302,24 @@ export default async function ParentHomePage({
       const rightPeriod = payPeriodById.get(right.payPeriodId);
       return (leftPeriod?.end_date ?? "").localeCompare(rightPeriod?.end_date ?? "");
     });
+  const { data: manualAdjustments, error: manualAdjustmentError } =
+    childProfiles.length && moneyFeaturesEnabled
+      ? await supabase
+          .from("ledger_transactions")
+          .select("id, child_profile_id, amount_cents, description, effective_date, created_at")
+          .eq("payout_household_id", householdId)
+          .eq("transaction_type", "manual_adjustment")
+          .in(
+            "child_profile_id",
+            childProfiles.map((child) => child.id),
+          )
+          .order("created_at", { ascending: false })
+          .limit(5)
+      : { data: [], error: null };
+
+  if (manualAdjustmentError) {
+    throw new Error(manualAdjustmentError.message);
+  }
 
   return (
     <main className="page-shell">
@@ -346,9 +367,21 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
+        {params.updatedTemplate ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Chore template updated.
+          </p>
+        ) : null}
+
         {params.approved ? (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
             Chore approved.
+          </p>
+        ) : null}
+
+        {params.adjusted ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Money adjustment added.
           </p>
         ) : null}
 
@@ -379,14 +412,116 @@ export default async function ParentHomePage({
         {hasChildren ? (
           <>
             {moneyFeaturesEnabled ? (
-            <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
-              <summary className="cursor-pointer text-xl font-semibold">Money</summary>
-              <div className="mt-4 grid gap-3">
-                <h2 className="text-lg font-semibold">Ready to pay</h2>
-                {payoutRows.length ? (
-                  <div className="grid gap-3">
-                    {payoutRows.map((row) => {
-                      const period = payPeriodById.get(row.payPeriodId);
+              <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
+                <summary className="cursor-pointer text-xl font-semibold">Money</summary>
+                <div className="mt-4 grid gap-6">
+                  <section className="grid gap-3">
+                    <h2 className="text-lg font-semibold">Add adjustment</h2>
+                    <form
+                      action={createManualAdjustmentAction}
+                      className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                    >
+                    <label className="grid gap-2 text-base font-semibold">
+                      Child
+                      <select
+                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                        name="childProfileId"
+                        required
+                      >
+                        {children.map((child) => (
+                          <option key={child.id} value={child.id}>
+                            {child.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-base font-semibold">
+                      Direction
+                      <select
+                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                        name="direction"
+                        required
+                      >
+                        <option value="credit">Add money</option>
+                        <option value="debit">Subtract money</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-base font-semibold">
+                      Amount
+                      <input
+                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                        inputMode="decimal"
+                        min="0.01"
+                        name="amountDollars"
+                        placeholder="5.00"
+                        required
+                        step="0.01"
+                        type="number"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-base font-semibold">
+                      Effective date
+                      <input
+                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                        defaultValue={today}
+                        name="effectiveOn"
+                        required
+                        type="date"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-base font-semibold">
+                      Note
+                      <input
+                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                        maxLength={500}
+                        name="description"
+                        placeholder="Allowance correction"
+                        required
+                        type="text"
+                      />
+                    </label>
+                    <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+                      Add adjustment
+                    </button>
+                    </form>
+                  </section>
+
+                <section className="grid gap-3">
+                  <h2 className="text-lg font-semibold">Recent adjustments</h2>
+                  {manualAdjustments?.length ? (
+                    <div className="grid gap-3">
+                      {manualAdjustments.map((adjustment) => (
+                        <article
+                          className="grid gap-1 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                          key={adjustment.id}
+                        >
+                          <h3 className="text-lg font-semibold">
+                            {childNameById.get(adjustment.child_profile_id) ?? "Child"}
+                          </h3>
+                          <p className="text-base">
+                            {adjustment.amount_cents > 0 ? "+" : "-"}$
+                            {Math.abs(adjustment.amount_cents / 100).toFixed(2)}
+                          </p>
+                          <p className="text-base text-[var(--muted)]">
+                            {adjustment.effective_date}
+                            {adjustment.description ? ` • ${adjustment.description}` : ""}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                      No manual adjustments yet.
+                    </p>
+                  )}
+                </section>
+
+                  <section className="grid gap-3">
+                    <h2 className="text-lg font-semibold">Ready to pay</h2>
+                    {payoutRows.length ? (
+                      <div className="grid gap-3">
+                        {payoutRows.map((row) => {
+                          const period = payPeriodById.get(row.payPeriodId);
 
                       return (
                         <article
@@ -424,15 +559,16 @@ export default async function ParentHomePage({
                           </form>
                         </article>
                       );
-                    })}
-                  </div>
-                ) : (
-                  <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                    No approved payouts are ready.
-                  </p>
-                )}
-              </div>
-            </details>
+                        })}
+                      </div>
+                    ) : (
+                      <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                        No approved payouts are ready.
+                      </p>
+                    )}
+                  </section>
+                </div>
+              </details>
             ) : null}
 
             <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
@@ -675,12 +811,20 @@ export default async function ParentHomePage({
                               {template.schedule_type.replace("_", "-")}
                             </p>
                           </div>
-                          <form action={deactivateTemplateAction}>
-                            <input name="templateId" type="hidden" value={template.id} />
-                            <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
-                              Deactivate
-                            </button>
-                          </form>
+                          <div className="flex flex-wrap gap-2">
+                            <Link
+                              className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold"
+                              href={`/parent/chores/${template.id}/edit`}
+                            >
+                              Edit
+                            </Link>
+                            <form action={deactivateTemplateAction}>
+                              <input name="templateId" type="hidden" value={template.id} />
+                              <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
+                                Deactivate
+                              </button>
+                            </form>
+                          </div>
                         </article>
                       ))}
                     </div>

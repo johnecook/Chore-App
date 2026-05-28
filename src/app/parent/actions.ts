@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   approveChoreSubmissionForCurrentPeriod,
   closeOutPayout,
+  createManualAdjustment,
   deactivateChoreTemplate,
   deleteSubmissionPhoto,
   rejectChoreSubmission,
@@ -46,6 +47,14 @@ const deactivateTemplateSchema = z.object({
   templateId: z.uuid(),
 });
 
+const manualAdjustmentSchema = z.object({
+  childProfileId: z.uuid(),
+  direction: z.enum(["credit", "debit"]),
+  amountDollars: z.string().trim().regex(/^\d+(\.\d{1,2})?$/),
+  description: z.string().trim().min(1).max(500),
+  effectiveOn: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
 function parentDashboardError(message: string): never {
   redirect(`/parent?error=${encodeURIComponent(message)}`);
 }
@@ -53,6 +62,11 @@ function parentDashboardError(message: string): never {
 function optionalString(value: FormDataEntryValue | null) {
   const stringValue = String(value ?? "").trim();
   return stringValue.length ? stringValue : undefined;
+}
+
+function dollarsToCents(value: string) {
+  const [dollars, cents = ""] = value.split(".");
+  return Number(dollars) * 100 + Number(cents.padEnd(2, "0"));
 }
 
 export async function approveSubmissionAction(formData: FormData) {
@@ -252,4 +266,41 @@ export async function deactivateTemplateAction(formData: FormData) {
   }
 
   redirect(`/parent?deactivatedTemplate=${templateId}`);
+}
+
+export async function createManualAdjustmentAction(formData: FormData) {
+  const parsed = manualAdjustmentSchema.safeParse({
+    childProfileId: formData.get("childProfileId"),
+    direction: formData.get("direction"),
+    amountDollars: formData.get("amountDollars"),
+    description: formData.get("description"),
+    effectiveOn: optionalString(formData.get("effectiveOn")),
+  });
+
+  if (!parsed.success) {
+    parentDashboardError("Enter a child, amount, and note for the adjustment.");
+  }
+
+  const unsignedCents = dollarsToCents(parsed.data.amountDollars);
+
+  if (unsignedCents <= 0) {
+    parentDashboardError("Adjustment amount must be greater than zero.");
+  }
+
+  const amountCents = parsed.data.direction === "credit" ? unsignedCents : -unsignedCents;
+  const supabase = await createSupabaseServerClient();
+  let adjustmentId: string;
+
+  try {
+    adjustmentId = await createManualAdjustment(supabase, {
+      childProfileId: parsed.data.childProfileId,
+      amountCents,
+      description: parsed.data.description,
+      effectiveOn: parsed.data.effectiveOn,
+    });
+  } catch (error) {
+    parentDashboardError(error instanceof Error ? error.message : "Could not add adjustment.");
+  }
+
+  redirect(`/parent?adjusted=${adjustmentId}`);
 }

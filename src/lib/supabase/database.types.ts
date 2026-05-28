@@ -741,6 +741,15 @@ export type Database = {
         };
         Returns: string;
       };
+      create_manual_adjustment: {
+        Args: {
+          target_child_profile_id: string;
+          target_amount_cents: number;
+          adjustment_description: string;
+          effective_on?: string;
+        };
+        Returns: string;
+      };
       create_parent_household: {
         Args: {
           household_name: string;

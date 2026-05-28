@@ -97,6 +97,42 @@ export async function deactivateChoreTemplate(
   return data.id;
 }
 
+export async function updateChoreTemplateBasics(
+  client: AppSupabaseClient,
+  params: {
+    householdId: string;
+    templateId: string;
+    title: string;
+    description?: string | null;
+    valueModel: Database["public"]["Enums"]["chore_value_model"];
+    amountCents: number;
+  },
+) {
+  const { data, error } = await client
+    .from("chore_templates")
+    .update({
+      title: params.title,
+      description: params.description ?? null,
+      value_model: params.valueModel,
+      amount_cents: params.amountCents,
+    })
+    .eq("id", params.templateId)
+    .eq("household_id", params.householdId)
+    .eq("active", true)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("That chore template could not be found or is inactive.");
+  }
+
+  return data.id;
+}
+
 export function submitChoreInstance(
   client: AppSupabaseClient,
   params: {
@@ -207,6 +243,25 @@ export function closeOutPayout(
       target_pay_period_id: params.payPeriodId,
       target_child_profile_id: params.childProfileId,
       payout_note: params.note ?? null,
+    }),
+  );
+}
+
+export function createManualAdjustment(
+  client: AppSupabaseClient,
+  params: {
+    childProfileId: string;
+    amountCents: number;
+    description: string;
+    effectiveOn?: string;
+  },
+) {
+  return unwrapRpcId(
+    client.rpc("create_manual_adjustment", {
+      target_child_profile_id: params.childProfileId,
+      target_amount_cents: params.amountCents,
+      adjustment_description: params.description,
+      effective_on: params.effectiveOn,
     }),
   );
 }
