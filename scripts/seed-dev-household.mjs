@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const seedPassword = process.env.DEV_SEED_PASSWORD ?? "CookFamily123!";
 const householdName = "Cook Household";
+const resetDevSeed = process.argv.includes("--reset");
+const localDatabaseUrl =
+  process.env.SUPABASE_DB_URL ?? process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:55322/postgres";
 
 const accounts = {
   parent: {
@@ -162,6 +166,82 @@ async function insertOne(supabase, table, row) {
   return data.id;
 }
 
+async function resetHouseholdDataWithPostgres(householdId) {
+  const sql = `
+begin;
+
+alter table public.ledger_transactions disable trigger prevent_ledger_deletes;
+
+delete from public.notification_events where household_id = :'household_id';
+delete from public.chore_claims
+where instance_id in (
+  select id from public.chore_instances where earning_household_id = :'household_id'
+);
+delete from public.ledger_transactions
+where earning_household_id = :'household_id'
+  or payout_household_id = :'household_id';
+delete from public.payout_events where payout_household_id = :'household_id';
+delete from public.approval_events
+where instance_id in (
+  select id from public.chore_instances where earning_household_id = :'household_id'
+);
+delete from public.chore_submissions
+where instance_id in (
+  select id from public.chore_instances where earning_household_id = :'household_id'
+);
+delete from public.chore_instances where earning_household_id = :'household_id';
+delete from public.chore_template_assignees
+where template_id in (
+  select id from public.chore_templates where household_id = :'household_id'
+);
+delete from public.chore_templates where household_id = :'household_id';
+delete from public.household_invitations where household_id = :'household_id';
+delete from public.child_household_availability_overrides where household_id = :'household_id';
+delete from public.child_household_availability_windows where household_id = :'household_id';
+delete from public.pay_cycle_settings where household_id = :'household_id';
+delete from public.pay_periods where household_id = :'household_id';
+delete from public.child_profiles where primary_household_id = :'household_id';
+delete from public.household_memberships where household_id = :'household_id';
+delete from public.households where id = :'household_id';
+
+alter table public.ledger_transactions enable trigger prevent_ledger_deletes;
+
+commit;
+`;
+
+  await new Promise((resolveRun, rejectRun) => {
+    const child = spawn(
+      "psql",
+      [localDatabaseUrl, "-v", "ON_ERROR_STOP=1", "-v", `household_id=${householdId}`],
+      {
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    );
+
+    let output = "";
+
+    child.stdout.on("data", (chunk) => {
+      output += chunk;
+    });
+
+    child.stderr.on("data", (chunk) => {
+      output += chunk;
+    });
+
+    child.on("error", rejectRun);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolveRun();
+        return;
+      }
+
+      rejectRun(new Error(output.trim() || `psql exited with status ${code}`));
+    });
+
+    child.stdin.end(sql);
+  });
+}
+
 async function createTemplate(supabase, params) {
   const templateId = await insertOne(supabase, "chore_templates", {
     household_id: params.householdId,
@@ -269,15 +349,19 @@ async function main() {
     throw existingHouseholdError;
   }
 
-  if (existingHousehold) {
+  if (existingHousehold && !resetDevSeed) {
     console.log("Cook Household dev data already exists.");
-    console.log("Credentials were refreshed. Reset Supabase before rerunning if you want a full rebuild.");
+    console.log("Credentials were refreshed. Run `npm run seed:dev -- --reset` to rebuild seed data.");
     console.log("");
     console.log("Login credentials:");
     console.log(`  Parent: ${accounts.parent.email} / ${seedPassword}`);
     console.log(`  Will:   ${accounts.will.email} / ${seedPassword}`);
     console.log(`  Hollis: ${accounts.hollis.email} / ${seedPassword}`);
     return;
+  }
+
+  if (existingHousehold && resetDevSeed) {
+    await resetHouseholdDataWithPostgres(existingHousehold.id);
   }
 
   const householdId = await insertOne(supabase, "households", {

@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "seed:dev": "node scripts/seed-dev-household.mjs",
     "test": "vitest run",
+    "test:db": "node scripts/run-supabase-smokes.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

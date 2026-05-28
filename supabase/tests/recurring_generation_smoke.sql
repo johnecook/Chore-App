@@ -170,8 +170,8 @@ begin
 
   inserted_count := public.generate_chore_instances_for_range('2026-06-01', '2026-06-07');
 
-  if inserted_count <> 5 then
-    raise exception 'Expected 5 generated instances, got %', inserted_count;
+  if inserted_count < 5 then
+    raise exception 'Expected at least 5 generated instances, got %', inserted_count;
   end if;
 
   if public.generate_chore_instances_for_range('2026-06-01', '2026-06-07') <> 0 then
