@@ -609,6 +609,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      notification_events: {
+        Row: {
+          id: string;
+          recipient_profile_id: string;
+          household_id: string;
+          actor_profile_id: string | null;
+          chore_instance_id: string | null;
+          chore_submission_id: string | null;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          title: string;
+          body: string;
+          metadata: Json;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_profile_id: string;
+          household_id: string;
+          actor_profile_id?: string | null;
+          chore_instance_id?: string | null;
+          chore_submission_id?: string | null;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          title: string;
+          body: string;
+          metadata?: Json;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_profile_id?: string;
+          household_id?: string;
+          actor_profile_id?: string | null;
+          chore_instance_id?: string | null;
+          chore_submission_id?: string | null;
+          event_type?: Database["public"]["Enums"]["notification_event_type"];
+          title?: string;
+          body?: string;
+          metadata?: Json;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -738,6 +783,20 @@ export type Database = {
         };
         Returns: undefined;
       };
+      enqueue_notification_event: {
+        Args: {
+          target_recipient_profile_id: string;
+          target_household_id: string;
+          target_actor_profile_id: string | null;
+          target_chore_instance_id: string | null;
+          target_chore_submission_id: string | null;
+          target_event_type: Database["public"]["Enums"]["notification_event_type"];
+          target_title: string;
+          target_body: string;
+          target_metadata?: Json;
+        };
+        Returns: string;
+      };
       reject_chore_submission: {
         Args: {
           target_submission_id: string;
@@ -787,6 +846,12 @@ export type Database = {
       household_role: "admin" | "parent" | "child";
       ledger_transaction_type: "pending_credit" | "approved_credit" | "manual_adjustment" | "payout";
       monthly_ordinal: "1" | "2" | "3" | "4" | "last";
+      notification_event_type:
+        | "chore_available"
+        | "chore_submitted"
+        | "chore_approved"
+        | "chore_rejected"
+        | "chore_reopened";
       pay_cycle_type: "weekly" | "biweekly" | "monthly_date" | "monthly_weekday";
     };
     CompositeTypes: {

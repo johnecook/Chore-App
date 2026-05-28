@@ -20,6 +20,10 @@ Current migrations:
 - `supabase/migrations/202605260003_parent_approval_commands.sql`
 - `supabase/migrations/202605260004_optional_household_money.sql`
 - `supabase/migrations/202605260005_parent_invites.sql`
+- `supabase/migrations/202605270001_chore_submission_photo_storage.sql`
+- `supabase/migrations/202605270002_expire_overdue_chores.sql`
+- `supabase/migrations/202605270003_generate_recurring_chore_instances.sql`
+- `supabase/migrations/202605280001_notification_events.sql`
 
 ## Foundation scope
 
@@ -33,7 +37,7 @@ The first schema slice covers:
 - base custody availability patterns
 - date-specific custody overrides
 
-Notifications and audit logs come next.
+Audit logs come next.
 
 ## Auth model
 
@@ -153,6 +157,13 @@ Notifications and audit logs come next.
 - Payout transactions are negative amounts and point to a payout event.
 - Updates and deletes are blocked by database triggers; corrections must use compensating manual adjustment rows.
 - Ledger transactions are not required for unpaid responsibilities, allowance-included responsibilities, or households with money disabled.
+
+### `notification_events`
+- Durable in-app notification events for chore lifecycle changes.
+- Event types currently cover available up-for-grabs chores, submitted chores, approved chores, rejected chores, and reopened chores.
+- Rows are recipient-scoped through `recipient_profile_id`; RLS lets users read only their own notification events.
+- `metadata` stores small event context such as occurrence date.
+- Web push delivery can consume these rows later while the in-app inbox fallback remains available.
 
 ## Phase 2 domain placeholders
 
