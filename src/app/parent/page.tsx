@@ -264,6 +264,27 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
+        {availableToday?.length ? (
+          <section aria-labelledby="available-heading" className="grid gap-3">
+            <h2 id="available-heading" className="text-xl font-semibold">
+              Up for grabs today
+            </h2>
+            <div className="grid gap-3">
+              {availableToday.map((instance) => (
+                <article
+                  className="rounded-lg border border-[var(--line)] bg-white p-4"
+                  key={instance.id}
+                >
+                  <h3 className="text-lg font-semibold">
+                    {templateTitleById.get(instance.template_id) ?? "Chore"}
+                  </h3>
+                  <p className="text-base text-[var(--muted)]">Available until claimed.</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {hasChildren ? (
           <section aria-labelledby="today-by-child-heading" className="grid gap-3">
             <h2 id="today-by-child-heading" className="text-xl font-semibold">
@@ -459,27 +480,6 @@ export default async function ParentHomePage({
                   </details>
                 );
               })}
-            </div>
-          </section>
-        ) : null}
-
-        {availableToday?.length ? (
-          <section aria-labelledby="available-heading" className="grid gap-3">
-            <h2 id="available-heading" className="text-xl font-semibold">
-              Up for grabs today
-            </h2>
-            <div className="grid gap-3">
-              {availableToday.map((instance) => (
-                <article
-                  className="rounded-lg border border-[var(--line)] bg-white p-4"
-                  key={instance.id}
-                >
-                  <h3 className="text-lg font-semibold">
-                    {templateTitleById.get(instance.template_id) ?? "Chore"}
-                  </h3>
-                  <p className="text-base text-[var(--muted)]">Available until claimed.</p>
-                </article>
-              ))}
             </div>
           </section>
         ) : null}
