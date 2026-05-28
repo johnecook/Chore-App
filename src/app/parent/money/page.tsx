@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createManualAdjustmentAction } from "@/app/parent/actions";
+import { closeOutPayoutAction, createManualAdjustmentAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
@@ -133,7 +133,7 @@ export default async function ParentMoneyPage({
     ? await supabase
         .from("ledger_transactions")
         .select(
-          "id, child_profile_id, transaction_type, amount_cents, description, effective_date, created_at",
+          "id, child_profile_id, pay_period_id, transaction_type, amount_cents, description, effective_date, created_at",
         )
         .eq("payout_household_id", householdId)
         .in("child_profile_id", childProfileIds)
@@ -156,6 +156,49 @@ export default async function ParentMoneyPage({
       (balancesByChildId.get(ledger.child_profile_id) ?? 0) + ledger.amount_cents,
     );
   }
+
+  const payPeriodIds = [
+    ...new Set(
+      ledgerRows
+        ?.map((ledger) => ledger.pay_period_id)
+        .filter((payPeriodId): payPeriodId is string => Boolean(payPeriodId)) ?? [],
+    ),
+  ];
+  const { data: payPeriods, error: payPeriodError } = payPeriodIds.length
+    ? await supabase.from("pay_periods").select("id, start_date, end_date").in("id", payPeriodIds)
+    : { data: [], error: null };
+
+  if (payPeriodError) {
+    throw new Error(payPeriodError.message);
+  }
+
+  const payPeriodById = new Map(payPeriods?.map((period) => [period.id, period]) ?? []);
+  const payoutRows = Array.from(
+    (ledgerRows ?? []).reduce((rows, ledger) => {
+      if (!ledger.pay_period_id) {
+        return rows;
+      }
+
+      const key = `${ledger.child_profile_id}:${ledger.pay_period_id}`;
+      const existing = rows.get(key) ?? {
+        amountCents: 0,
+        childProfileId: ledger.child_profile_id,
+        payPeriodId: ledger.pay_period_id,
+      };
+      rows.set(key, {
+        ...existing,
+        amountCents: existing.amountCents + ledger.amount_cents,
+      });
+      return rows;
+    }, new Map<string, { amountCents: number; childProfileId: string; payPeriodId: string }>()),
+  )
+    .map(([, row]) => row)
+    .filter((row) => row.amountCents > 0)
+    .sort((left, right) => {
+      const leftPeriod = payPeriodById.get(left.payPeriodId);
+      const rightPeriod = payPeriodById.get(right.payPeriodId);
+      return (leftPeriod?.end_date ?? "").localeCompare(rightPeriod?.end_date ?? "");
+    });
 
   return (
     <main className="page-shell">
@@ -256,6 +299,58 @@ export default async function ParentMoneyPage({
           ) : (
             <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
               Add a child before money history can appear.
+            </p>
+          )}
+        </section>
+
+        <section aria-labelledby="payout-heading" className="grid gap-3">
+          <h2 id="payout-heading" className="text-xl font-semibold">
+            Ready to pay
+          </h2>
+          {payoutRows.length ? (
+            <div className="grid gap-3">
+              {payoutRows.map((row) => {
+                const period = payPeriodById.get(row.payPeriodId);
+
+                return (
+                  <article
+                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    key={`${row.childProfileId}:${row.payPeriodId}`}
+                  >
+                    <div className="grid gap-1">
+                      <h3 className="text-xl font-semibold leading-snug">
+                        {childNameById.get(row.childProfileId) ?? "Child"}
+                      </h3>
+                      <p className="text-3xl font-semibold">{formatMoney(row.amountCents)}</p>
+                      {period ? (
+                        <p className="text-base text-[var(--muted)]">
+                          {formatDate(period.start_date)} through {formatDate(period.end_date)}
+                        </p>
+                      ) : null}
+                    </div>
+                    <form action={closeOutPayoutAction} className="grid gap-3">
+                      <input name="childProfileId" type="hidden" value={row.childProfileId} />
+                      <input name="payPeriodId" type="hidden" value={row.payPeriodId} />
+                      <label className="grid gap-2 text-base font-semibold">
+                        Payout note
+                        <input
+                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          maxLength={500}
+                          name="note"
+                          type="text"
+                        />
+                      </label>
+                      <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+                        Mark paid
+                      </button>
+                    </form>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+              No approved payouts are ready.
             </p>
           )}
         </section>
