@@ -302,25 +302,6 @@ export default async function ParentHomePage({
       const rightPeriod = payPeriodById.get(right.payPeriodId);
       return (leftPeriod?.end_date ?? "").localeCompare(rightPeriod?.end_date ?? "");
     });
-  const { data: manualAdjustments, error: manualAdjustmentError } =
-    childProfiles.length && moneyFeaturesEnabled
-      ? await supabase
-          .from("ledger_transactions")
-          .select("id, child_profile_id, amount_cents, description, effective_date, created_at")
-          .eq("payout_household_id", householdId)
-          .eq("transaction_type", "manual_adjustment")
-          .in(
-            "child_profile_id",
-            childProfiles.map((child) => child.id),
-          )
-          .order("created_at", { ascending: false })
-          .limit(5)
-      : { data: [], error: null };
-
-  if (manualAdjustmentError) {
-    throw new Error(manualAdjustmentError.message);
-  }
-
   return (
     <main className="page-shell">
       <div className="grid gap-8 py-6">
@@ -416,107 +397,6 @@ export default async function ParentHomePage({
                 <summary className="cursor-pointer text-xl font-semibold">Money</summary>
                 <div className="mt-4 grid gap-6">
                   <section className="grid gap-3">
-                    <h2 className="text-lg font-semibold">Add adjustment</h2>
-                    <form
-                      action={createManualAdjustmentAction}
-                      className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                    >
-                    <label className="grid gap-2 text-base font-semibold">
-                      Child
-                      <select
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                        name="childProfileId"
-                        required
-                      >
-                        {children.map((child) => (
-                          <option key={child.id} value={child.id}>
-                            {child.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-2 text-base font-semibold">
-                      Direction
-                      <select
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                        name="direction"
-                        required
-                      >
-                        <option value="credit">Add money</option>
-                        <option value="debit">Subtract money</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-2 text-base font-semibold">
-                      Amount
-                      <input
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                        inputMode="decimal"
-                        min="0.01"
-                        name="amountDollars"
-                        placeholder="5.00"
-                        required
-                        step="0.01"
-                        type="number"
-                      />
-                    </label>
-                    <label className="grid gap-2 text-base font-semibold">
-                      Effective date
-                      <input
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                        defaultValue={today}
-                        name="effectiveOn"
-                        required
-                        type="date"
-                      />
-                    </label>
-                    <label className="grid gap-2 text-base font-semibold">
-                      Note
-                      <input
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                        maxLength={500}
-                        name="description"
-                        placeholder="Allowance correction"
-                        required
-                        type="text"
-                      />
-                    </label>
-                    <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
-                      Add adjustment
-                    </button>
-                    </form>
-                  </section>
-
-                <section className="grid gap-3">
-                  <h2 className="text-lg font-semibold">Recent adjustments</h2>
-                  {manualAdjustments?.length ? (
-                    <div className="grid gap-3">
-                      {manualAdjustments.map((adjustment) => (
-                        <article
-                          className="grid gap-1 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={adjustment.id}
-                        >
-                          <h3 className="text-lg font-semibold">
-                            {childNameById.get(adjustment.child_profile_id) ?? "Child"}
-                          </h3>
-                          <p className="text-base">
-                            {adjustment.amount_cents > 0 ? "+" : "-"}$
-                            {Math.abs(adjustment.amount_cents / 100).toFixed(2)}
-                          </p>
-                          <p className="text-base text-[var(--muted)]">
-                            {adjustment.effective_date}
-                            {adjustment.description ? ` • ${adjustment.description}` : ""}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                      No manual adjustments yet.
-                    </p>
-                  )}
-                </section>
-
-                  <section className="grid gap-3">
                     <h2 className="text-lg font-semibold">Ready to pay</h2>
                     {payoutRows.length ? (
                       <div className="grid gap-3">
@@ -557,6 +437,62 @@ export default async function ParentHomePage({
                               Mark paid
                             </button>
                           </form>
+                          <details className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-3">
+                            <summary className="cursor-pointer text-base font-semibold text-[var(--accent-strong)]">
+                              Add adjustment
+                            </summary>
+                            <form action={createManualAdjustmentAction} className="mt-3 grid gap-3">
+                              <input name="childProfileId" type="hidden" value={row.childProfileId} />
+                              <label className="grid gap-2 text-base font-semibold">
+                                Direction
+                                <select
+                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                  name="direction"
+                                  required
+                                >
+                                  <option value="credit">Add money</option>
+                                  <option value="debit">Subtract money</option>
+                                </select>
+                              </label>
+                              <label className="grid gap-2 text-base font-semibold">
+                                Amount
+                                <input
+                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                  inputMode="decimal"
+                                  min="0.01"
+                                  name="amountDollars"
+                                  placeholder="5.00"
+                                  required
+                                  step="0.01"
+                                  type="number"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-base font-semibold">
+                                Effective date
+                                <input
+                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                  defaultValue={today}
+                                  name="effectiveOn"
+                                  required
+                                  type="date"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-base font-semibold">
+                                Note
+                                <input
+                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                  maxLength={500}
+                                  name="description"
+                                  placeholder="Allowance correction"
+                                  required
+                                  type="text"
+                                />
+                              </label>
+                              <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                                Save adjustment
+                              </button>
+                            </form>
+                          </details>
                         </article>
                       );
                         })}

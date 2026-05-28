@@ -53,6 +53,7 @@ const manualAdjustmentSchema = z.object({
   amountDollars: z.string().trim().regex(/^\d+(\.\d{1,2})?$/),
   description: z.string().trim().min(1).max(500),
   effectiveOn: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  redirectTo: z.enum(["dashboard", "money"]).optional(),
 });
 
 function parentDashboardError(message: string): never {
@@ -275,6 +276,7 @@ export async function createManualAdjustmentAction(formData: FormData) {
     amountDollars: formData.get("amountDollars"),
     description: formData.get("description"),
     effectiveOn: optionalString(formData.get("effectiveOn")),
+    redirectTo: optionalString(formData.get("redirectTo")),
   });
 
   if (!parsed.success) {
@@ -302,5 +304,6 @@ export async function createManualAdjustmentAction(formData: FormData) {
     parentDashboardError(error instanceof Error ? error.message : "Could not add adjustment.");
   }
 
-  redirect(`/parent?adjusted=${adjustmentId}`);
+  const destination = parsed.data.redirectTo === "money" ? "/parent/money" : "/parent";
+  redirect(`${destination}?adjusted=${adjustmentId}`);
 }

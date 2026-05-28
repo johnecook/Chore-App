@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { createManualAdjustmentAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
@@ -35,10 +36,19 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T00:00:00`));
 }
 
-export default async function ParentMoneyPage() {
-  const [profile, householdId] = await Promise.all([
+function currentDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default async function ParentMoneyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ adjusted?: string }>;
+}) {
+  const [profile, householdId, params] = await Promise.all([
     requireCurrentProfile(),
     getCurrentParentHouseholdId(),
+    searchParams,
   ]);
 
   if (profile.appRole === "child") {
@@ -50,6 +60,7 @@ export default async function ParentMoneyPage() {
   }
 
   const supabase = await createSupabaseServerClient();
+  const today = currentDateString();
   const { data: household, error: householdError } = await supabase
     .from("households")
     .select("id, money_features_enabled")
@@ -160,6 +171,12 @@ export default async function ParentMoneyPage() {
         </header>
 
         <section aria-labelledby="balances-heading" className="grid gap-3">
+          {params.adjusted ? (
+            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+              Money adjustment added.
+            </p>
+          ) : null}
+
           <h2 id="balances-heading" className="text-xl font-semibold">
             Balances
           </h2>
@@ -176,6 +193,63 @@ export default async function ParentMoneyPage() {
                   <p className="text-3xl font-semibold">
                     {formatMoney(balancesByChildId.get(childProfileId) ?? 0)}
                   </p>
+                  <details className="mt-3 grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-3">
+                    <summary className="cursor-pointer text-base font-semibold text-[var(--accent-strong)]">
+                      Add adjustment
+                    </summary>
+                    <form action={createManualAdjustmentAction} className="mt-3 grid gap-3">
+                      <input name="childProfileId" type="hidden" value={childProfileId} />
+                      <input name="redirectTo" type="hidden" value="money" />
+                      <label className="grid gap-2 text-base font-semibold">
+                        Direction
+                        <select
+                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          name="direction"
+                          required
+                        >
+                          <option value="credit">Add money</option>
+                          <option value="debit">Subtract money</option>
+                        </select>
+                      </label>
+                      <label className="grid gap-2 text-base font-semibold">
+                        Amount
+                        <input
+                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          inputMode="decimal"
+                          min="0.01"
+                          name="amountDollars"
+                          placeholder="5.00"
+                          required
+                          step="0.01"
+                          type="number"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-base font-semibold">
+                        Effective date
+                        <input
+                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          defaultValue={today}
+                          name="effectiveOn"
+                          required
+                          type="date"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-base font-semibold">
+                        Note
+                        <input
+                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          maxLength={500}
+                          name="description"
+                          placeholder="Allowance correction"
+                          required
+                          type="text"
+                        />
+                      </label>
+                      <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                        Save adjustment
+                      </button>
+                    </form>
+                  </details>
                 </article>
               ))}
             </div>
