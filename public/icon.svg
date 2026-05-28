@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Chores app icon">
+  <rect width="512" height="512" rx="104" fill="#176b5b"/>
+  <path fill="#fbfaf7" d="M160 148h192c22 0 40 18 40 40v176c0 22-18 40-40 40H160c-22 0-40-18-40-40V188c0-22 18-40 40-40Zm0 40v176h192V188H160Z"/>
+  <path fill="#fbfaf7" d="M192 122c0-22 18-40 40-40h48c22 0 40 18 40 40v48h-40v-48h-48v48h-40v-48Z"/>
+  <path fill="#176b5b" d="m218 302 91-91 29 29-120 120-58-58 29-29 29 29Z"/>
+</svg>
