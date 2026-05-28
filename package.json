@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "seed:dev": "node scripts/seed-dev-household.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

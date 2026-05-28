@@ -151,6 +151,19 @@ Use `.env.example` as the template for local and hosted environments.
 
 Local Supabase values come from `supabase status`. Hosted values should be copied from the Supabase project settings when the hosted project is created or linked.
 
+## Dev seed data
+
+Run `npm run seed:dev` against a running Supabase environment to create a login-ready Cook Household fixture. It creates John as the parent/admin and Will and Hollis as child accounts, then adds household memberships, child profiles, availability windows, sample chores, an approval queue item, an up-for-grabs chore, a rejected chore, an approved credit, and notification inbox rows.
+
+The command is safe to rerun: it refreshes the account passwords and leaves existing Cook Household data alone. Reset Supabase before rerunning if you want to rebuild the fixture from scratch.
+
+Default local credentials:
+- Parent: `john.cook@example.test` / `CookFamily123!`
+- Will: `will.cook@example.test` / `CookFamily123!`
+- Hollis: `hollis.cook@example.test` / `CookFamily123!`
+
+Set `DEV_SEED_PASSWORD` before running the script to use a different password.
+
 ## Suggested first implementation slice
 
 1. Scaffold the Next.js + TypeScript + Tailwind app.
