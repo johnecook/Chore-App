@@ -24,6 +24,7 @@ Current migrations:
 - `supabase/migrations/202605270002_expire_overdue_chores.sql`
 - `supabase/migrations/202605270003_generate_recurring_chore_instances.sql`
 - `supabase/migrations/202605280001_notification_events.sql`
+- `supabase/migrations/202605280002_notification_read_commands.sql`
 
 ## Foundation scope
 
@@ -164,6 +165,7 @@ Audit logs come next.
 - Rows are recipient-scoped through `recipient_profile_id`; RLS lets users read only their own notification events.
 - `metadata` stores small event context such as occurrence date.
 - Web push delivery can consume these rows later while the in-app inbox fallback remains available.
+- `mark_notification_events_read(notification_id)` lets the current recipient mark one event read; passing null marks all unread events for that recipient read.
 
 ## Phase 2 domain placeholders
 

@@ -797,6 +797,12 @@ export type Database = {
         };
         Returns: string;
       };
+      mark_notification_events_read: {
+        Args: {
+          target_notification_id?: string | null;
+        };
+        Returns: number;
+      };
       reject_chore_submission: {
         Args: {
           target_submission_id: string;

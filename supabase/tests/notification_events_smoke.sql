@@ -15,9 +15,11 @@ declare
   approved_instance_id uuid;
   selected_submission_id uuid;
   approved_submission_id uuid;
+  target_notification_id uuid;
   rejection_id uuid;
   reopen_id uuid;
   approval_id uuid;
+  marked_count int;
 begin
   insert into auth.users (id, email, raw_user_meta_data, is_sso_user, is_anonymous)
   values
@@ -228,5 +230,45 @@ begin
       and event.title = 'Chore approved'
   ) then
     raise exception 'Expected child approval notification';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', child_id::text, true);
+
+  select event.id
+  into target_notification_id
+  from public.notification_events event
+  where event.chore_instance_id = approved_instance_id
+    and event.recipient_profile_id = child_id
+    and event.event_type = 'chore_approved'
+    and event.read_at is null;
+
+  marked_count := public.mark_notification_events_read(target_notification_id);
+
+  if marked_count <> 1 then
+    raise exception 'Expected one notification to be marked read, got %', marked_count;
+  end if;
+
+  if not exists (
+    select 1
+    from public.notification_events event
+    where event.id = target_notification_id
+      and event.read_at is not null
+  ) then
+    raise exception 'Expected target notification to have read timestamp';
+  end if;
+
+  marked_count := public.mark_notification_events_read(null);
+
+  if marked_count <> 3 then
+    raise exception 'Expected remaining child notifications to be marked read, got %', marked_count;
+  end if;
+
+  if exists (
+    select 1
+    from public.notification_events event
+    where event.recipient_profile_id = child_id
+      and event.read_at is null
+  ) then
+    raise exception 'Expected all child notifications to be read';
   end if;
 end $$;

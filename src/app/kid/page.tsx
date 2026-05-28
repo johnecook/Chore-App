@@ -263,7 +263,15 @@ export default async function KidHomePage({
             <Link className="text-base font-semibold text-[var(--accent-strong)]" href="/">
               Chores
             </Link>
-            <SignOutButton />
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                className="text-base font-semibold text-[var(--accent-strong)]"
+                href="/notifications"
+              >
+                Updates
+              </Link>
+              <SignOutButton />
+            </div>
           </div>
           <div className="grid gap-2">
             <h1 className="text-3xl font-semibold leading-tight">Today</h1>
