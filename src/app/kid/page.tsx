@@ -312,6 +312,12 @@ export default async function KidHomePage({
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 className="text-base font-semibold text-[var(--accent-strong)]"
+                href="/kid/history"
+              >
+                History
+              </Link>
+              <Link
+                className="text-base font-semibold text-[var(--accent-strong)]"
                 href="/notifications"
               >
                 Notifications{unreadNotificationCount ? ` (${unreadNotificationCount})` : ""}
