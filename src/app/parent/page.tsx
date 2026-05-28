@@ -5,6 +5,7 @@ import {
   closeOutPayoutAction,
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
+  reopenChoreAction,
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
@@ -12,6 +13,12 @@ import { CHORE_SUBMISSION_PHOTO_BUCKET } from "@/lib/supabase/chore-photo-storag
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+function addDays(date: string, days: number) {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
 
 export default async function ParentHomePage({
   searchParams,
@@ -23,6 +30,7 @@ export default async function ParentHomePage({
     paid?: string;
     photoDeleted?: string;
     rejected?: string;
+    reopened?: string;
   }>;
 }) {
   const [profile, householdId, params] = await Promise.all([
@@ -108,6 +116,7 @@ export default async function ParentHomePage({
 
   const hasChildren = children.length > 0;
   const today = new Date().toISOString().slice(0, 10);
+  const twoWeeksFromToday = addDays(today, 14);
   const { data: choreTemplates, error: templateError } = await supabase
     .from("chore_templates")
     .select("id, title, schedule_type, active, created_at")
@@ -133,6 +142,21 @@ export default async function ParentHomePage({
     throw new Error(remainingError.message);
   }
 
+  const { data: upcomingInstances, error: upcomingError } = await supabase
+    .from("chore_instances")
+    .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
+    .eq("earning_household_id", householdId)
+    .gt("occurrence_date", today)
+    .lte("occurrence_date", twoWeeksFromToday)
+    .in("status", ["assigned", "available", "rejected"])
+    .order("occurrence_date", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(20);
+
+  if (upcomingError) {
+    throw new Error(upcomingError.message);
+  }
+
   const { data: waitingApproval, error: approvalError } = await supabase
     .from("chore_instances")
     .select(
@@ -147,8 +171,42 @@ export default async function ParentHomePage({
     throw new Error(approvalError.message);
   }
 
+  const { data: recentHistory, error: recentHistoryError } = await supabase
+    .from("chore_instances")
+    .select(
+      "id, template_id, assigned_child_profile_id, status, occurrence_date, updated_at, value_model_snapshot, amount_cents_snapshot",
+    )
+    .eq("earning_household_id", householdId)
+    .in("status", ["approved", "rejected", "expired"])
+    .order("updated_at", { ascending: false })
+    .limit(10);
+
+  if (recentHistoryError) {
+    throw new Error(recentHistoryError.message);
+  }
+
+  const dashboardTemplateIds = [
+    ...new Set([
+      ...(choreTemplates?.map((template) => template.id) ?? []),
+      ...(remainingToday?.map((instance) => instance.template_id) ?? []),
+      ...(upcomingInstances?.map((instance) => instance.template_id) ?? []),
+      ...(waitingApproval?.map((instance) => instance.template_id) ?? []),
+      ...(recentHistory?.map((instance) => instance.template_id) ?? []),
+    ]),
+  ];
+  const { data: dashboardTemplates, error: dashboardTemplateError } = dashboardTemplateIds.length
+    ? await supabase
+        .from("chore_templates")
+        .select("id, title")
+        .in("id", dashboardTemplateIds)
+    : { data: [], error: null };
+
+  if (dashboardTemplateError) {
+    throw new Error(dashboardTemplateError.message);
+  }
+
   const templateTitleById = new Map(
-    choreTemplates?.map((template) => [template.id, template.title]) ?? [],
+    dashboardTemplates?.map((template) => [template.id, template.title]) ?? [],
   );
   const submittedInstanceIds = waitingApproval?.map((instance) => instance.id) ?? [];
   const { data: submissions, error: submissionError } = submittedInstanceIds.length
@@ -314,6 +372,12 @@ export default async function ParentHomePage({
         {params.photoDeleted ? (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
             Photo removed.
+          </p>
+        ) : null}
+
+        {params.reopened ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Chore reopened.
           </p>
         ) : null}
 
@@ -513,6 +577,89 @@ export default async function ParentHomePage({
                   ) : (
                     <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
                       No chores are assigned for today yet.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-3">
+                  <h2 className="text-lg font-semibold">Upcoming</h2>
+                  {upcomingInstances?.length ? (
+                    <div className="grid gap-3">
+                      {upcomingInstances.map((instance) => (
+                        <article
+                          className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                          key={instance.id}
+                        >
+                          <h3 className="text-lg font-semibold">
+                            {templateTitleById.get(instance.template_id) ?? "Chore"}
+                          </h3>
+                          <p className="text-base text-[var(--muted)]">
+                            {instance.occurrence_date} •{" "}
+                            {instance.up_for_grabs_slot
+                              ? "Available"
+                              : childNameById.get(instance.assigned_child_profile_id ?? "") ?? "Child"}
+                            {instance.status === "rejected" ? " • Needs another try" : ""}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                      No upcoming chores are assigned.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-3">
+                  <h2 className="text-lg font-semibold">Recent history</h2>
+                  {recentHistory?.length ? (
+                    <div className="grid gap-3">
+                      {recentHistory.map((instance) => (
+                        <article
+                          className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                          key={instance.id}
+                        >
+                          <div className="grid gap-1">
+                            <h3 className="text-lg font-semibold">
+                              {templateTitleById.get(instance.template_id) ?? "Chore"}
+                            </h3>
+                            <p className="text-base text-[var(--muted)]">
+                              {childNameById.get(instance.assigned_child_profile_id ?? "") ?? "Child"} •{" "}
+                              {instance.status === "approved"
+                                ? "Approved"
+                                : instance.status === "rejected"
+                                  ? "Needs another try"
+                                  : "Missed"}{" "}
+                              on {instance.occurrence_date}
+                              {instance.value_model_snapshot === "fixed"
+                                ? ` • $${(instance.amount_cents_snapshot / 100).toFixed(2)}`
+                                : ""}
+                            </p>
+                          </div>
+
+                          {instance.status === "rejected" || instance.status === "expired" ? (
+                            <form action={reopenChoreAction} className="grid gap-3">
+                              <input name="instanceId" type="hidden" value={instance.id} />
+                              <label className="grid gap-2 text-base font-semibold">
+                                Reopen note
+                                <input
+                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                  maxLength={500}
+                                  name="feedback"
+                                  type="text"
+                                />
+                              </label>
+                              <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                                Reopen
+                              </button>
+                            </form>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
+                      No completed chores yet.
                     </p>
                   )}
                 </div>

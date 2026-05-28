@@ -7,6 +7,7 @@ import {
   closeOutPayout,
   deleteSubmissionPhoto,
   rejectChoreSubmission,
+  reopenChoreInstance,
 } from "@/lib/supabase/chore-commands";
 import {
   createPhotoCleanupLookupClient,
@@ -22,6 +23,11 @@ const approveSubmissionSchema = z.object({
 const rejectSubmissionSchema = z.object({
   submissionId: z.uuid(),
   feedback: z.string().trim().min(1).max(500),
+});
+
+const reopenChoreSchema = z.object({
+  instanceId: z.uuid(),
+  feedback: z.string().trim().max(500).optional(),
 });
 
 const closeOutPayoutSchema = z.object({
@@ -91,6 +97,31 @@ export async function rejectSubmissionAction(formData: FormData) {
   }
 
   redirect(`/parent?rejected=${rejectionId}`);
+}
+
+export async function reopenChoreAction(formData: FormData) {
+  const parsed = reopenChoreSchema.safeParse({
+    instanceId: formData.get("instanceId"),
+    feedback: optionalString(formData.get("feedback")),
+  });
+
+  if (!parsed.success) {
+    parentDashboardError("That chore could not be reopened.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  let reopenId: string;
+
+  try {
+    reopenId = await reopenChoreInstance(supabase, {
+      instanceId: parsed.data.instanceId,
+      feedback: parsed.data.feedback ?? null,
+    });
+  } catch (error) {
+    parentDashboardError(error instanceof Error ? error.message : "Could not reopen chore.");
+  }
+
+  redirect(`/parent?reopened=${reopenId}`);
 }
 
 export async function closeOutPayoutAction(formData: FormData) {
