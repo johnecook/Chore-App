@@ -2,8 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
-  closeOutPayoutAction,
-  createManualAdjustmentAction,
   deactivateTemplateAction,
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
@@ -55,17 +53,6 @@ export default async function ParentHomePage({
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: household, error: householdError } = await supabase
-    .from("households")
-    .select("id, money_features_enabled")
-    .eq("id", householdId)
-    .maybeSingle();
-
-  if (householdError) {
-    throw new Error(householdError.message);
-  }
-
-  const moneyFeaturesEnabled = household?.money_features_enabled ?? false;
   const { data: childMemberships, error: membershipError } = await supabase
     .from("household_memberships")
     .select("user_id")
@@ -243,67 +230,7 @@ export default async function ParentHomePage({
       )
     ).filter((row): row is readonly [string, string] => row !== null),
   );
-  const { data: approvedLedger, error: approvedLedgerError } = childProfiles.length && moneyFeaturesEnabled
-    ? await supabase
-        .from("ledger_transactions")
-        .select("id, child_profile_id, pay_period_id, amount_cents, transaction_type")
-        .eq("payout_household_id", householdId)
-        .in(
-          "child_profile_id",
-          childProfiles.map((child) => child.id),
-        )
-        .in("transaction_type", ["approved_credit", "manual_adjustment", "payout"])
-    : { data: [], error: null };
 
-  if (approvedLedgerError) {
-    throw new Error(approvedLedgerError.message);
-  }
-
-  const payPeriodIds = [
-    ...new Set(
-      approvedLedger
-        ?.map((ledger) => ledger.pay_period_id)
-        .filter((payPeriodId): payPeriodId is string => Boolean(payPeriodId)) ?? [],
-    ),
-  ];
-  const { data: payPeriods, error: payPeriodError } = payPeriodIds.length
-    ? await supabase
-        .from("pay_periods")
-        .select("id, start_date, end_date")
-        .in("id", payPeriodIds)
-    : { data: [], error: null };
-
-  if (payPeriodError) {
-    throw new Error(payPeriodError.message);
-  }
-
-  const payPeriodById = new Map(payPeriods?.map((period) => [period.id, period]) ?? []);
-  const payoutRows = Array.from(
-    (approvedLedger ?? []).reduce((rows, ledger) => {
-      if (!ledger.pay_period_id) {
-        return rows;
-      }
-
-      const key = `${ledger.child_profile_id}:${ledger.pay_period_id}`;
-      const existing = rows.get(key) ?? {
-        amountCents: 0,
-        childProfileId: ledger.child_profile_id,
-        payPeriodId: ledger.pay_period_id,
-      };
-      rows.set(key, {
-        ...existing,
-        amountCents: existing.amountCents + ledger.amount_cents,
-      });
-      return rows;
-    }, new Map<string, { amountCents: number; childProfileId: string; payPeriodId: string }>()),
-  )
-    .map(([, row]) => row)
-    .filter((row) => row.amountCents > 0)
-    .sort((left, right) => {
-      const leftPeriod = payPeriodById.get(left.payPeriodId);
-      const rightPeriod = payPeriodById.get(right.payPeriodId);
-      return (leftPeriod?.end_date ?? "").localeCompare(rightPeriod?.end_date ?? "");
-    });
   return (
     <main className="page-shell">
       <div className="grid gap-8 py-6">
@@ -400,122 +327,6 @@ export default async function ParentHomePage({
 
         {hasChildren ? (
           <>
-            {moneyFeaturesEnabled ? (
-              <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
-                <summary className="cursor-pointer text-xl font-semibold">Money</summary>
-                <div className="mt-4 grid gap-6">
-                  <section className="grid gap-3">
-                    <h2 className="text-lg font-semibold">Ready to pay</h2>
-                    {payoutRows.length ? (
-                      <div className="grid gap-3">
-                        {payoutRows.map((row) => {
-                          const period = payPeriodById.get(row.payPeriodId);
-
-                      return (
-                        <article
-                          className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                          key={`${row.childProfileId}:${row.payPeriodId}`}
-                        >
-                          <div className="grid gap-1">
-                            <h3 className="text-lg font-semibold">
-                              {childNameById.get(row.childProfileId) ?? "Child"}
-                            </h3>
-                            <p className="text-2xl font-semibold">
-                              ${(row.amountCents / 100).toFixed(2)}
-                            </p>
-                            {period ? (
-                              <p className="text-base text-[var(--muted)]">
-                                {period.start_date} through {period.end_date}
-                              </p>
-                            ) : null}
-                          </div>
-                          <form action={closeOutPayoutAction} className="grid gap-3">
-                            <input name="childProfileId" type="hidden" value={row.childProfileId} />
-                            <input name="payPeriodId" type="hidden" value={row.payPeriodId} />
-                            <label className="grid gap-2 text-base font-semibold">
-                              Payout note
-                              <input
-                                className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                maxLength={500}
-                                name="note"
-                                type="text"
-                              />
-                            </label>
-                            <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
-                              Mark paid
-                            </button>
-                          </form>
-                          <details className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-3">
-                            <summary className="cursor-pointer text-base font-semibold text-[var(--accent-strong)]">
-                              Add adjustment
-                            </summary>
-                            <form action={createManualAdjustmentAction} className="mt-3 grid gap-3">
-                              <input name="childProfileId" type="hidden" value={row.childProfileId} />
-                              <input name="payPeriodId" type="hidden" value={row.payPeriodId} />
-                              <label className="grid gap-2 text-base font-semibold">
-                                Direction
-                                <select
-                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                  name="direction"
-                                  required
-                                >
-                                  <option value="credit">Add money</option>
-                                  <option value="debit">Subtract money</option>
-                                </select>
-                              </label>
-                              <label className="grid gap-2 text-base font-semibold">
-                                Amount
-                                <input
-                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                  inputMode="decimal"
-                                  min="0.01"
-                                  name="amountDollars"
-                                  placeholder="5.00"
-                                  required
-                                  step="0.01"
-                                  type="number"
-                                />
-                              </label>
-                              <label className="grid gap-2 text-base font-semibold">
-                                Effective date
-                                <input
-                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                  defaultValue={today}
-                                  name="effectiveOn"
-                                  required
-                                  type="date"
-                                />
-                              </label>
-                              <label className="grid gap-2 text-base font-semibold">
-                                Note
-                                <input
-                                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                                  maxLength={500}
-                                  name="description"
-                                  placeholder="Allowance correction"
-                                  required
-                                  type="text"
-                                />
-                              </label>
-                              <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
-                                Save adjustment
-                              </button>
-                            </form>
-                          </details>
-                        </article>
-                      );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                        No approved payouts are ready.
-                      </p>
-                    )}
-                  </section>
-                </div>
-              </details>
-            ) : null}
-
             <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
               <summary className="cursor-pointer text-xl font-semibold">Chores</summary>
               <div className="mt-4 grid gap-6">

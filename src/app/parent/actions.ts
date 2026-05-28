@@ -37,6 +37,7 @@ const closeOutPayoutSchema = z.object({
   childProfileId: z.uuid(),
   payPeriodId: z.uuid(),
   note: z.string().trim().max(500).optional(),
+  redirectTo: z.enum(["dashboard", "money"]).optional(),
 });
 
 const deleteSubmissionPhotoSchema = z.object({
@@ -157,6 +158,7 @@ export async function closeOutPayoutAction(formData: FormData) {
     childProfileId: formData.get("childProfileId"),
     payPeriodId: formData.get("payPeriodId"),
     note: optionalString(formData.get("note")),
+    redirectTo: optionalString(formData.get("redirectTo")),
   });
 
   if (!parsed.success) {
@@ -212,7 +214,8 @@ export async function closeOutPayoutAction(formData: FormData) {
     photoSubmissions?.map((submission) => submission.photo_storage_path) ?? [],
   );
 
-  redirect(`/parent?paid=${payoutId}`);
+  const destination = parsed.data.redirectTo === "money" ? "/parent/money" : "/parent";
+  redirect(`${destination}?paid=${payoutId}`);
 }
 
 export async function deleteSubmissionPhotoAction(formData: FormData) {

@@ -43,7 +43,7 @@ function currentDateString() {
 export default async function ParentMoneyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ adjusted?: string }>;
+  searchParams: Promise<{ adjusted?: string; paid?: string }>;
 }) {
   const [profile, householdId, params] = await Promise.all([
     requireCurrentProfile(),
@@ -220,6 +220,12 @@ export default async function ParentMoneyPage({
             </p>
           ) : null}
 
+          {params.paid ? (
+            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+              Payout marked paid.
+            </p>
+          ) : null}
+
           <h2 id="balances-heading" className="text-xl font-semibold">
             Balances
           </h2>
@@ -331,6 +337,7 @@ export default async function ParentMoneyPage({
                     <form action={closeOutPayoutAction} className="grid gap-3">
                       <input name="childProfileId" type="hidden" value={row.childProfileId} />
                       <input name="payPeriodId" type="hidden" value={row.payPeriodId} />
+                      <input name="redirectTo" type="hidden" value="money" />
                       <label className="grid gap-2 text-base font-semibold">
                         Payout note
                         <input
