@@ -92,19 +92,6 @@ export default async function ParentHomePage({
     throw new Error(childUserError.message);
   }
 
-  const { data: pendingInvites, error: inviteError } = await supabase
-    .from("household_invitations")
-    .select("id, email, child_display_name")
-    .eq("household_id", householdId)
-    .eq("role", "child")
-    .is("accepted_at", null)
-    .is("revoked_at", null)
-    .order("created_at", { ascending: false });
-
-  if (inviteError) {
-    throw new Error(inviteError.message);
-  }
-
   const children = childProfiles.map((childProfile) => {
     const childUser = childUsers?.find((user) => user.id === childProfile.user_id);
     return {
@@ -687,50 +674,6 @@ export default async function ParentHomePage({
                     </p>
                   )}
                 </div>
-              </div>
-            </details>
-
-            <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open>
-              <summary className="cursor-pointer text-xl font-semibold">Children</summary>
-              <div className="mt-4 grid gap-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold">Household children</h2>
-                  <Link
-                    aria-label="Invite child"
-                    className="inline-grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--line)] bg-white text-2xl font-semibold text-[var(--accent-strong)]"
-                    href="/parent/household"
-                  >
-                    +
-                  </Link>
-                </div>
-                <div className="grid gap-3">
-                  {children.map((child) => (
-                    <Link
-                      className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-xl font-semibold"
-                      href={`/parent/children/${child.id}/availability`}
-                      key={child.id}
-                    >
-                      {child.name}
-                    </Link>
-                  ))}
-                </div>
-
-                {pendingInvites?.length ? (
-                  <div className="grid gap-3">
-                    <h2 className="text-lg font-semibold">Pending invites</h2>
-                    {pendingInvites.map((invite) => (
-                      <article
-                        className="grid gap-1 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
-                        key={invite.id}
-                      >
-                        <h3 className="text-lg font-semibold">
-                          {invite.child_display_name ?? invite.email}
-                        </h3>
-                        <p className="break-all text-base text-[var(--muted)]">{invite.email}</p>
-                      </article>
-                    ))}
-                  </div>
-                ) : null}
               </div>
             </details>
           </>
