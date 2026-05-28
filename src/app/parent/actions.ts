@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   approveChoreSubmissionForCurrentPeriod,
   closeOutPayout,
+  deactivateChoreTemplate,
   deleteSubmissionPhoto,
   rejectChoreSubmission,
   reopenChoreInstance,
@@ -13,6 +14,7 @@ import {
   createPhotoCleanupLookupClient,
   removeStoredChorePhotos,
 } from "@/lib/supabase/chore-photo-storage";
+import { getCurrentParentHouseholdId } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const approveSubmissionSchema = z.object({
@@ -38,6 +40,10 @@ const closeOutPayoutSchema = z.object({
 
 const deleteSubmissionPhotoSchema = z.object({
   submissionId: z.uuid(),
+});
+
+const deactivateTemplateSchema = z.object({
+  templateId: z.uuid(),
 });
 
 function parentDashboardError(message: string): never {
@@ -216,4 +222,34 @@ export async function deleteSubmissionPhotoAction(formData: FormData) {
   await removeStoredChorePhotos([submission?.photo_storage_path]);
 
   redirect("/parent?photoDeleted=1");
+}
+
+export async function deactivateTemplateAction(formData: FormData) {
+  const parsed = deactivateTemplateSchema.safeParse({
+    templateId: formData.get("templateId"),
+  });
+
+  if (!parsed.success) {
+    parentDashboardError("That chore template could not be deactivated.");
+  }
+
+  const householdId = await getCurrentParentHouseholdId();
+
+  if (!householdId) {
+    parentDashboardError("Choose a household before changing chore templates.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  let templateId: string;
+
+  try {
+    templateId = await deactivateChoreTemplate(supabase, {
+      householdId,
+      templateId: parsed.data.templateId,
+    });
+  } catch (error) {
+    parentDashboardError(error instanceof Error ? error.message : "Could not deactivate template.");
+  }
+
+  redirect(`/parent?deactivatedTemplate=${templateId}`);
 }

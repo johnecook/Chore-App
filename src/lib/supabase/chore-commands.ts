@@ -70,6 +70,33 @@ export function createChoreTemplate(
   );
 }
 
+export async function deactivateChoreTemplate(
+  client: AppSupabaseClient,
+  params: {
+    householdId: string;
+    templateId: string;
+  },
+) {
+  const { data, error } = await client
+    .from("chore_templates")
+    .update({ active: false })
+    .eq("id", params.templateId)
+    .eq("household_id", params.householdId)
+    .eq("active", true)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("That chore template could not be found or is already inactive.");
+  }
+
+  return data.id;
+}
+
 export function submitChoreInstance(
   client: AppSupabaseClient,
   params: {

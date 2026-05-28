@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
   closeOutPayoutAction,
+  deactivateTemplateAction,
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
   reopenChoreAction,
@@ -26,6 +27,7 @@ export default async function ParentHomePage({
   searchParams: Promise<{
     approved?: string;
     createdChore?: string;
+    deactivatedTemplate?: string;
     error?: string;
     paid?: string;
     photoDeleted?: string;
@@ -335,6 +337,12 @@ export default async function ParentHomePage({
         {params.createdChore ? (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
             Chore created.
+          </p>
+        ) : null}
+
+        {params.deactivatedTemplate ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Chore template deactivated.
           </p>
         ) : null}
 
@@ -658,13 +666,21 @@ export default async function ParentHomePage({
                     <div className="grid gap-3">
                       {choreTemplates.map((template) => (
                         <article
-                          className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
                           key={template.id}
                         >
-                          <h3 className="text-lg font-semibold">{template.title}</h3>
-                          <p className="text-base capitalize text-[var(--muted)]">
-                            {template.schedule_type.replace("_", "-")}
-                          </p>
+                          <div className="grid gap-1">
+                            <h3 className="text-lg font-semibold">{template.title}</h3>
+                            <p className="text-base capitalize text-[var(--muted)]">
+                              {template.schedule_type.replace("_", "-")}
+                            </p>
+                          </div>
+                          <form action={deactivateTemplateAction}>
+                            <input name="templateId" type="hidden" value={template.id} />
+                            <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
+                              Deactivate
+                            </button>
+                          </form>
                         </article>
                       ))}
                     </div>
