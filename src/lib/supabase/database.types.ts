@@ -837,6 +837,19 @@ export type Database = {
         };
         Returns: string;
       };
+      expire_overdue_chore_instances: {
+        Args: {
+          reference_time?: string;
+        };
+        Returns: number;
+      };
+      generate_chore_instances_for_range: {
+        Args: {
+          range_start?: string;
+          range_end?: string;
+        };
+        Returns: number;
+      };
       mark_notification_events_read: {
         Args: {
           target_notification_id?: string | null;

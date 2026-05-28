@@ -71,6 +71,12 @@ function dollarsToCents(value: string) {
   return Number(dollars) * 100 + Number(cents.padEnd(2, "0"));
 }
 
+function addDays(date: string, days: number) {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
 export async function approveSubmissionAction(formData: FormData) {
   const parsed = approveSubmissionSchema.safeParse({
     submissionId: formData.get("submissionId"),
@@ -309,4 +315,31 @@ export async function createManualAdjustmentAction(formData: FormData) {
 
   const destination = parsed.data.redirectTo === "money" ? "/parent/money" : "/parent";
   redirect(`${destination}?adjusted=${adjustmentId}`);
+}
+
+export async function syncScheduleAction() {
+  const householdId = await getCurrentParentHouseholdId();
+
+  if (!householdId) {
+    parentDashboardError("Choose a household before syncing chores.");
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const supabase = await createSupabaseServerClient();
+  const { error: generationError } = await supabase.rpc("generate_chore_instances_for_range", {
+    range_start: today,
+    range_end: addDays(today, 14),
+  });
+
+  if (generationError) {
+    parentDashboardError(generationError.message);
+  }
+
+  const { error: expirationError } = await supabase.rpc("expire_overdue_chore_instances", {});
+
+  if (expirationError) {
+    parentDashboardError(expirationError.message);
+  }
+
+  redirect("/parent?synced=1");
 }

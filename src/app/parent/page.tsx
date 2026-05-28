@@ -8,6 +8,7 @@ import {
   deleteSubmissionPhotoAction,
   rejectSubmissionAction,
   reopenChoreAction,
+  syncScheduleAction,
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
@@ -35,6 +36,7 @@ export default async function ParentHomePage({
     photoDeleted?: string;
     rejected?: string;
     reopened?: string;
+    synced?: string;
     updatedTemplate?: string;
   }>;
 }) {
@@ -390,6 +392,12 @@ export default async function ParentHomePage({
           </p>
         ) : null}
 
+        {params.synced ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Chore schedule synced.
+          </p>
+        ) : null}
+
         {hasChildren ? (
           <>
             {moneyFeaturesEnabled ? (
@@ -513,13 +521,20 @@ export default async function ParentHomePage({
               <div className="mt-4 grid gap-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold">Waiting for approval</h2>
-                  <Link
-                    aria-label="Add chore"
-                    className="inline-grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--line)] bg-white text-2xl font-semibold text-[var(--accent-strong)]"
-                    href="/parent/chores/new"
-                  >
-                    +
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <form action={syncScheduleAction}>
+                      <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
+                        Sync
+                      </button>
+                    </form>
+                    <Link
+                      aria-label="Add chore"
+                      className="inline-grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--line)] bg-white text-2xl font-semibold text-[var(--accent-strong)]"
+                      href="/parent/chores/new"
+                    >
+                      +
+                    </Link>
+                  </div>
                 </div>
                 {waitingApproval?.length ? (
                   <div className="grid gap-3">
