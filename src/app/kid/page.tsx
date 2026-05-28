@@ -268,7 +268,7 @@ export default async function KidHomePage({
                 className="text-base font-semibold text-[var(--accent-strong)]"
                 href="/notifications"
               >
-                Updates
+                Notifications
               </Link>
               <SignOutButton />
             </div>

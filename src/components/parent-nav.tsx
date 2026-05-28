@@ -27,7 +27,7 @@ export function ParentNav() {
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
           href="/notifications"
         >
-          Updates
+          Notifications
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
