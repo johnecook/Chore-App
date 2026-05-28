@@ -17,6 +17,10 @@ type Household = Pick<
   Database["public"]["Tables"]["households"]["Row"],
   "id" | "name" | "money_features_enabled"
 >;
+type ApprovalEvent = Pick<
+  Database["public"]["Tables"]["approval_events"]["Row"],
+  "instance_id" | "event_type" | "feedback" | "created_at"
+>;
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -64,11 +68,13 @@ function ChoreSubmitCard({
   household,
   instance,
   moneyFeaturesEnabled,
+  parentFeedback,
   template,
 }: {
   household?: Household;
   instance: ChoreInstance;
   moneyFeaturesEnabled: boolean;
+  parentFeedback?: string | null;
   template?: ChoreTemplate;
 }) {
   return (
@@ -80,6 +86,11 @@ function ChoreSubmitCard({
         ) : null}
         <p className="text-base text-[var(--muted)]">{dueLabel(instance)}</p>
         {household ? <p className="text-base text-[var(--muted)]">{household.name}</p> : null}
+        {parentFeedback ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base">
+            Parent note: {parentFeedback}
+          </p>
+        ) : null}
       </div>
       <div className="flex flex-wrap gap-2 text-base font-semibold">
         <span>{statusLabel(instance)}</span>
@@ -222,6 +233,30 @@ export default async function KidHomePage({
   const householdById = new Map<string, Household>(
     households?.map((household) => [household.id, household]) ?? [],
   );
+  const rejectedInstanceIds =
+    instances?.filter((instance) => instance.status === "rejected").map((instance) => instance.id) ?? [];
+  const { data: approvalEvents, error: approvalEventError } = rejectedInstanceIds.length
+    ? await supabase
+        .from("approval_events")
+        .select("instance_id, event_type, feedback, created_at")
+        .in("instance_id", rejectedInstanceIds)
+        .eq("event_type", "rejected")
+        .order("created_at", { ascending: false })
+    : { data: [], error: null };
+
+  if (approvalEventError) {
+    throw new Error(approvalEventError.message);
+  }
+
+  const latestRejectedFeedbackByInstanceId = new Map(
+    approvalEvents?.reduce<Array<[string, ApprovalEvent]>>((rows, event) => {
+      if (!rows.some(([instanceId]) => instanceId === event.instance_id)) {
+        rows.push([event.instance_id, event]);
+      }
+
+      return rows;
+    }, []) ?? [],
+  );
   const toDoChores =
     instances?.filter((instance) => instance.status === "assigned" || instance.status === "rejected") ??
     [];
@@ -344,6 +379,7 @@ export default async function KidHomePage({
                       instance={instance}
                       key={instance.id}
                       moneyFeaturesEnabled={moneyFeaturesEnabled}
+                      parentFeedback={latestRejectedFeedbackByInstanceId.get(instance.id)?.feedback}
                       template={templateById.get(instance.template_id)}
                     />
                   ))}
