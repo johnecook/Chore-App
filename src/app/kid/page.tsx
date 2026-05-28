@@ -370,6 +370,12 @@ export default async function KidHomePage({
                 <p className="text-2xl font-semibold">{formatMoney(recentPaidCents)}</p>
               </article>
             </div>
+            <Link
+              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-lg font-semibold"
+              href="/kid/money"
+            >
+              View money history
+            </Link>
           </section>
         ) : null}
 
