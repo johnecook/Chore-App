@@ -1,21 +1,12 @@
 import { redirect } from "next/navigation";
 import { createChoreTemplateAction } from "@/app/parent/chores/new/actions";
+import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-const weekdays = [
-  ["0", "Sun"],
-  ["1", "Mon"],
-  ["2", "Tue"],
-  ["3", "Wed"],
-  ["4", "Thu"],
-  ["5", "Fri"],
-  ["6", "Sat"],
-] as const;
 
 const presetCategories: Array<{
   value: Database["public"]["Enums"]["chore_template_preset_category"];
@@ -132,6 +123,9 @@ export default async function NewChorePage({
     selectedPreset?.suggested_value_model === "fixed" && !moneyFeaturesEnabled
       ? "unpaid"
       : (selectedPreset?.suggested_value_model ?? (moneyFeaturesEnabled ? "fixed" : "unpaid"));
+  const defaultScheduleType = selectedPreset?.suggested_schedule_type ?? "one_off";
+  const defaultOneOffDate =
+    selectedPreset?.suggested_schedule_type === "one_off" || !selectedPreset ? today : "";
   const presetsByCategory = presetCategories
     .map((category) => ({
       ...category,
@@ -217,222 +211,29 @@ export default async function NewChorePage({
               </section>
             ) : null}
 
-          <form action={createChoreTemplateAction} className="grid max-w-2xl gap-6">
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">
-                {selectedPreset ? "Edit chore details" : "Basics"}
-              </h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Title
-                <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={selectedPreset?.title ?? ""}
-                  maxLength={120}
-                  name="title"
-                  required
-                  type="text"
-                />
-              </label>
-              <label className="grid gap-2 text-lg font-semibold">
-                Description
-                <textarea
-                  className="min-h-28 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={selectedPreset?.description ?? ""}
-                  maxLength={500}
-                  name="description"
-                />
-              </label>
-            </section>
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Schedule</h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Type
-                <select
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={selectedPreset?.suggested_schedule_type ?? "one_off"}
-                  name="scheduleType"
-                >
-                  <option value="one_off">One-off</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="interval">Every few days</option>
-                </select>
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-lg font-semibold">
-                  Start date
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={today}
-                    name="startDate"
-                    required
-                    type="date"
-                  />
-                </label>
-                <label className="grid gap-2 text-lg font-semibold">
-                  One-off date
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={
-                      selectedPreset?.suggested_schedule_type === "one_off" || !selectedPreset
-                        ? today
-                        : ""
-                    }
-                    name="oneOffDate"
-                    type="date"
-                  />
-                </label>
-              </div>
-              <fieldset className="grid gap-3">
-                <legend className="text-lg font-semibold">Weekly days</legend>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {weekdays.map(([value, label]) => (
-                    <label
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
-                      key={value}
-                    >
-                      <input
-                        className="size-5"
-                        defaultChecked={selectedWeeklyWeekdays.has(value)}
-                        name="weeklyWeekdays"
-                        type="checkbox"
-                        value={value}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <label className="grid gap-2 text-lg font-semibold">
-                Interval days
-                <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  min={1}
-                  defaultValue={selectedPreset?.suggested_interval_days ?? ""}
-                  name="intervalDays"
-                  placeholder="3"
-                  type="number"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-lg font-semibold">
-                  Due after
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={selectedPreset?.suggested_due_time_start ?? ""}
-                    name="dueTimeStart"
-                    type="time"
-                  />
-                </label>
-                <label className="grid gap-2 text-lg font-semibold">
-                  Due before
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={selectedPreset?.suggested_due_time_end ?? ""}
-                    name="dueTimeEnd"
-                    type="time"
-                  />
-                </label>
-              </div>
-            </section>
-
-	            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-	              <h2 className="text-xl font-semibold">Value</h2>
-	              {!moneyFeaturesEnabled ? (
-	                <p className="text-base text-[var(--muted)]">
-	                  Money features are off for this household, so chores will not create payouts.
-	                </p>
-	              ) : null}
-	              <label className="grid gap-2 text-lg font-semibold">
-	                Model
-	                <select
-	                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-	                  defaultValue={defaultValueModel}
-	                  name="valueModel"
-	                >
-	                  {moneyFeaturesEnabled ? <option value="fixed">Fixed amount</option> : null}
-	                  <option value="allowance_included">Allowance included</option>
-	                  <option value="unpaid">Unpaid</option>
-	                </select>
-	              </label>
-	              {moneyFeaturesEnabled ? (
-	                <label className="grid gap-2 text-lg font-semibold">
-	                  Amount
-	                  <input
-	                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-	                    defaultValue={presetAmountDollars}
-	                    min="0"
-	                    name="amountDollars"
-	                    placeholder="5.00"
-	                    step="0.01"
-	                    type="number"
-	                  />
-	                </label>
-	              ) : null}
-	            </section>
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Assignment</h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Mode
-                <select
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={selectedPreset?.suggested_assignment_mode ?? "selected_children"}
-                  name="assignmentMode"
-                >
-                  <option value="selected_children">Selected children</option>
-                  <option value="all_eligible_children">All eligible children</option>
-                  <option value="up_for_grabs">Up for grabs</option>
-                </select>
-              </label>
-              <fieldset className="grid gap-3">
-                <legend className="text-lg font-semibold">Selected children</legend>
-                <div className="grid gap-2">
-                  {children.map((child) => (
-                    <label
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
-                      key={child.id}
-                    >
-                      <input
-                        className="size-5"
-                        name="selectedChildProfileIds"
-                        type="checkbox"
-                        value={child.id}
-                      />
-                      {child.name}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            </section>
-
-            <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Proof</h2>
-              <label className="flex min-h-12 items-center gap-3 text-lg font-semibold">
-                <input
-                  className="size-5"
-                  defaultChecked={selectedPreset?.suggested_photo_required ?? true}
-                  name="photoRequired"
-                  type="checkbox"
-                />
-                Photo required
-              </label>
-              <label className="flex min-h-12 items-center gap-3 text-lg font-semibold">
-                <input
-                  className="size-5"
-                  defaultChecked={selectedPreset?.suggested_approval_required ?? true}
-                  name="approvalRequired"
-                  type="checkbox"
-                />
-                Parent approval required
-              </label>
-            </section>
-
-            <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-              Create chore
-            </button>
-          </form>
+            <form action={createChoreTemplateAction} className="grid max-w-2xl gap-6">
+              <ChoreTemplateFormFields
+                children={children}
+                defaults={{
+                  amountDollars: presetAmountDollars,
+                  approvalRequired: selectedPreset?.suggested_approval_required ?? true,
+                  assignmentMode: selectedPreset?.suggested_assignment_mode ?? "selected_children",
+                  description: selectedPreset?.description ?? "",
+                  dueTimeEnd: selectedPreset?.suggested_due_time_end ?? "",
+                  dueTimeStart: selectedPreset?.suggested_due_time_start ?? "",
+                  intervalDays: selectedPreset?.suggested_interval_days ?? null,
+                  oneOffDate: defaultOneOffDate,
+                  photoRequired: selectedPreset?.suggested_photo_required ?? true,
+                  scheduleType: defaultScheduleType,
+                  startDate: today,
+                  title: selectedPreset?.title ?? "",
+                  valueModel: defaultValueModel,
+                  weeklyWeekdays: [...selectedWeeklyWeekdays],
+                }}
+                moneyFeaturesEnabled={moneyFeaturesEnabled}
+                submitLabel="Create chore"
+              />
+            </form>
           </div>
         ) : (
           <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">

@@ -157,6 +157,14 @@ export default async function NotificationsPage({
                   notification.chore_instance_id
                     ? `/parent#approval-${notification.chore_instance_id}`
                     : null;
+                const kidChoreHref =
+                  profile.appRole === "child" &&
+                  notification.chore_instance_id &&
+                  notification.event_type !== "chore_available"
+                    ? notification.event_type === "chore_approved"
+                      ? `/kid/history#chore-${notification.chore_instance_id}`
+                      : `/kid#chore-${notification.chore_instance_id}`
+                    : null;
 
                 return (
                   <article
@@ -201,6 +209,14 @@ export default async function NotificationsPage({
                           href={approvalHref}
                         >
                           Open approval
+                        </Link>
+                      ) : null}
+                      {kidChoreHref ? (
+                        <Link
+                          className="min-h-11 rounded-lg bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white"
+                          href={kidChoreHref}
+                        >
+                          Open chore
                         </Link>
                       ) : null}
                       {!notification.read_at ? (

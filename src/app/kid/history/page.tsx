@@ -211,6 +211,7 @@ export default async function KidHistoryPage() {
                 return (
                   <article
                     className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    id={`chore-${instance.id}`}
                     key={instance.id}
                   >
                     <div className="grid gap-1">

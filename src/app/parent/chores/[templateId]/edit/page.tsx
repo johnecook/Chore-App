@@ -1,20 +1,11 @@
 import { redirect } from "next/navigation";
 import { updateChoreTemplateAction } from "@/app/parent/chores/[templateId]/edit/actions";
+import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-const weekdays = [
-  ["0", "Sun"],
-  ["1", "Mon"],
-  ["2", "Tue"],
-  ["3", "Wed"],
-  ["4", "Thu"],
-  ["5", "Fri"],
-  ["6", "Sat"],
-] as const;
 
 function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
@@ -154,224 +145,29 @@ export default async function EditChoreTemplatePage({
         ) : (
           <form action={updateChoreTemplateAction} className="grid max-w-2xl gap-6">
             <input name="templateId" type="hidden" value={template.id} />
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Basics</h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Title
-                <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={template.title}
-                  maxLength={120}
-                  name="title"
-                  required
-                  type="text"
-                />
-              </label>
-              <label className="grid gap-2 text-lg font-semibold">
-                Description
-                <textarea
-                  className="min-h-28 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={template.description ?? ""}
-                  maxLength={500}
-                  name="description"
-                />
-              </label>
-            </section>
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Schedule</h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Type
-                <select
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={template.schedule_type}
-                  name="scheduleType"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="interval">Interval</option>
-                  <option value="one_off">One-off</option>
-                </select>
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-lg font-semibold">
-                  Start date
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={template.start_date}
-                    name="startDate"
-                    required
-                    type="date"
-                  />
-                </label>
-                <label className="grid gap-2 text-lg font-semibold">
-                  One-off date
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={template.one_off_date ?? ""}
-                    name="oneOffDate"
-                    type="date"
-                  />
-                </label>
-              </div>
-              <fieldset className="grid gap-3">
-                <legend className="text-lg font-semibold">Weekly days</legend>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {weekdays.map(([value, label]) => (
-                    <label
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
-                      key={value}
-                    >
-                      <input
-                        className="size-5"
-                        defaultChecked={selectedWeeklyWeekdays.has(value)}
-                        name="weeklyWeekdays"
-                        type="checkbox"
-                        value={value}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <label className="grid gap-2 text-lg font-semibold">
-                Interval days
-                <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={template.interval_days ?? ""}
-                  min={1}
-                  name="intervalDays"
-                  placeholder="3"
-                  type="number"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-lg font-semibold">
-                  Due after
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={template.due_time_start ?? ""}
-                    name="dueTimeStart"
-                    type="time"
-                  />
-                </label>
-                <label className="grid gap-2 text-lg font-semibold">
-                  Due before
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={template.due_time_end ?? ""}
-                    name="dueTimeEnd"
-                    type="time"
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Value</h2>
-              {!moneyFeaturesEnabled ? (
-                <p className="text-base text-[var(--muted)]">
-                  Money features are off for this household, so fixed payouts are unavailable.
-                </p>
-              ) : null}
-              <label className="grid gap-2 text-lg font-semibold">
-                Model
-                <select
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={defaultValueModel}
-                  name="valueModel"
-                >
-                  {moneyFeaturesEnabled ? <option value="fixed">Fixed amount</option> : null}
-                  <option value="allowance_included">Allowance included</option>
-                  <option value="unpaid">Unpaid</option>
-                </select>
-              </label>
-              {moneyFeaturesEnabled ? (
-                <label className="grid gap-2 text-lg font-semibold">
-                  Amount
-                  <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                    defaultValue={dollarsFromCents(template.amount_cents)}
-                    min="0"
-                    name="amountDollars"
-                    placeholder="5.00"
-                    step="0.01"
-                    type="number"
-                  />
-                </label>
-              ) : null}
-            </section>
-
-            <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Assignment</h2>
-              <label className="grid gap-2 text-lg font-semibold">
-                Mode
-                <select
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
-                  defaultValue={template.assignment_mode}
-                  name="assignmentMode"
-                >
-                  <option value="selected_children">Selected children</option>
-                  <option value="all_eligible_children">All eligible children</option>
-                  <option value="up_for_grabs">Up for grabs</option>
-                </select>
-              </label>
-              <fieldset className="grid gap-3">
-                <legend className="text-lg font-semibold">Selected children</legend>
-                <div className="grid gap-2">
-                  {children.map((child) => (
-                    <label
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
-                      key={child.id}
-                    >
-                      <input
-                        className="size-5"
-                        defaultChecked={selectedChildProfileIds.has(child.id)}
-                        name="selectedChildProfileIds"
-                        type="checkbox"
-                        value={child.id}
-                      />
-                      {child.name}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            </section>
-
-            <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h2 className="text-xl font-semibold">Proof</h2>
-              <label className="flex min-h-12 items-center gap-3 text-lg font-semibold">
-                <input
-                  className="size-5"
-                  defaultChecked={template.photo_required}
-                  name="photoRequired"
-                  type="checkbox"
-                />
-                Photo required
-              </label>
-              <label className="flex min-h-12 items-center gap-3 text-lg font-semibold">
-                <input
-                  className="size-5"
-                  defaultChecked={template.approval_required}
-                  name="approvalRequired"
-                  type="checkbox"
-                />
-                Parent approval required
-              </label>
-            </section>
-
-            <div className="flex flex-wrap gap-3">
-              <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                Save changes
-              </button>
-              <a
-                className="inline-flex min-h-12 items-center rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-lg font-semibold"
-                href="/parent/chores"
-              >
-                Cancel
-              </a>
-            </div>
+            <ChoreTemplateFormFields
+              cancelHref="/parent/chores"
+              children={children}
+              defaults={{
+                amountDollars: dollarsFromCents(template.amount_cents),
+                approvalRequired: template.approval_required,
+                assignmentMode: template.assignment_mode,
+                description: template.description ?? "",
+                dueTimeEnd: template.due_time_end ?? "",
+                dueTimeStart: template.due_time_start ?? "",
+                intervalDays: template.interval_days,
+                oneOffDate: template.one_off_date ?? "",
+                photoRequired: template.photo_required,
+                scheduleType: template.schedule_type,
+                selectedChildProfileIds: [...selectedChildProfileIds],
+                startDate: template.start_date,
+                title: template.title,
+                valueModel: defaultValueModel,
+                weeklyWeekdays: [...selectedWeeklyWeekdays],
+              }}
+              moneyFeaturesEnabled={moneyFeaturesEnabled}
+              submitLabel="Save changes"
+            />
           </form>
         )}
       </div>

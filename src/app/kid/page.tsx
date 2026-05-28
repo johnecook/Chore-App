@@ -78,7 +78,10 @@ function ChoreSubmitCard({
   template?: ChoreTemplate;
 }) {
   return (
-    <article className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+    <article
+      className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
+      id={`chore-${instance.id}`}
+    >
       <div className="grid gap-1">
         <h3 className="text-xl font-semibold leading-snug">{template?.title ?? "Chore"}</h3>
         {template?.description ? (
@@ -139,7 +142,10 @@ function ChoreClaimCard({
   template?: ChoreTemplate;
 }) {
   return (
-    <article className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+    <article
+      className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
+      id={`chore-${instance.id}`}
+    >
       <div className="grid gap-1">
         <h3 className="text-xl font-semibold leading-snug">{template?.title ?? "Chore"}</h3>
         {template?.description ? (
@@ -455,6 +461,7 @@ export default async function KidHomePage({
                 return (
                   <article
                     className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
+                    id={`chore-${instance.id}`}
                     key={instance.id}
                   >
                     <h3 className="text-xl font-semibold leading-snug">
