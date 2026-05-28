@@ -44,8 +44,8 @@ The function returns the number of instances expired for observability in `cron.
 
 Schedule: hourly at minute 7.
 
-Calls `public.generate_chore_instances_for_range(current_date, current_date + 14)`.
+Calls `public.generate_chore_instances_for_range(current_date, current_date + 1)`.
 
-The function creates daily, weekly, and interval chore instances for selected-child, all-eligible-children, and up-for-grabs templates. Existing unique indexes make the job idempotent, so reruns skip already-created instances.
+The function creates daily, weekly, and interval chore instances for today and tomorrow for selected-child, all-eligible-children, and up-for-grabs templates. Existing unique indexes make the job idempotent, so reruns skip already-created instances.
 
 Child-specific generation respects household availability windows and date overrides. When no availability window exists for a child, the child is treated as available so single-household setups do not require an availability pattern before chores can appear.

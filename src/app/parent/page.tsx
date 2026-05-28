@@ -110,7 +110,7 @@ export default async function ParentHomePage({
 
   const hasChildren = children.length > 0;
   const today = new Date().toISOString().slice(0, 10);
-  const twoWeeksFromToday = addDays(today, 14);
+  const tomorrow = addDays(today, 1);
   const { data: choreTemplates, error: templateError } = await supabase
     .from("chore_templates")
     .select("id, title, schedule_type, active, created_at")
@@ -141,7 +141,7 @@ export default async function ParentHomePage({
     .select("id, template_id, assigned_child_profile_id, status, occurrence_date, up_for_grabs_slot")
     .eq("earning_household_id", householdId)
     .gt("occurrence_date", today)
-    .lte("occurrence_date", twoWeeksFromToday)
+    .lte("occurrence_date", tomorrow)
     .in("status", ["assigned", "available", "rejected"])
     .order("occurrence_date", { ascending: true })
     .order("created_at", { ascending: true })

@@ -328,7 +328,7 @@ export async function syncScheduleAction() {
   const supabase = await createSupabaseServerClient();
   const { error: generationError } = await supabase.rpc("generate_chore_instances_for_range", {
     range_start: today,
-    range_end: addDays(today, 14),
+    range_end: addDays(today, 1),
   });
 
   if (generationError) {
