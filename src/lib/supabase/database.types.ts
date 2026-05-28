@@ -426,6 +426,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      approval_events: {
+        Row: {
+          id: string;
+          instance_id: string;
+          submission_id: string | null;
+          actor_profile_id: string;
+          event_type: Database["public"]["Enums"]["approval_event_type"];
+          feedback: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          instance_id: string;
+          submission_id?: string | null;
+          actor_profile_id: string;
+          event_type: Database["public"]["Enums"]["approval_event_type"];
+          feedback?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          instance_id?: string;
+          submission_id?: string | null;
+          actor_profile_id?: string;
+          event_type?: Database["public"]["Enums"]["approval_event_type"];
+          feedback?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       pay_periods: {
         Row: {
           id: string;

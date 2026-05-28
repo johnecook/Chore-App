@@ -10,7 +10,7 @@ export function ParentNav() {
         </Link>
         <SignOutButton />
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
           href="/parent"
@@ -22,6 +22,12 @@ export function ParentNav() {
           href="/parent/household"
         >
           Household
+        </Link>
+        <Link
+          className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
+          href="/parent/history"
+        >
+          History
         </Link>
         <Link
           className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center text-base font-semibold"
