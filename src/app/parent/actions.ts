@@ -8,6 +8,7 @@ import {
   createManualAdjustment,
   deactivateChoreTemplate,
   deleteSubmissionPhoto,
+  reactivateChoreTemplate,
   rejectChoreSubmission,
   reopenChoreInstance,
 } from "@/lib/supabase/chore-commands";
@@ -47,6 +48,10 @@ const deleteSubmissionPhotoSchema = z.object({
 const deactivateTemplateSchema = z.object({
   templateId: z.uuid(),
   redirectTo: z.enum(["dashboard", "chores"]).optional(),
+});
+
+const reactivateTemplateSchema = z.object({
+  templateId: z.uuid(),
 });
 
 const manualAdjustmentSchema = z.object({
@@ -280,6 +285,36 @@ export async function deactivateTemplateAction(formData: FormData) {
 
   const destination = parsed.data.redirectTo === "chores" ? "/parent/chores" : "/parent";
   redirect(`${destination}?deactivatedTemplate=${templateId}`);
+}
+
+export async function reactivateTemplateAction(formData: FormData) {
+  const parsed = reactivateTemplateSchema.safeParse({
+    templateId: formData.get("templateId"),
+  });
+
+  if (!parsed.success) {
+    parentDashboardError("That chore template could not be reactivated.");
+  }
+
+  const householdId = await getCurrentParentHouseholdId();
+
+  if (!householdId) {
+    parentDashboardError("Choose a household before changing chore templates.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  let templateId: string;
+
+  try {
+    templateId = await reactivateChoreTemplate(supabase, {
+      householdId,
+      templateId: parsed.data.templateId,
+    });
+  } catch (error) {
+    parentDashboardError(error instanceof Error ? error.message : "Could not reactivate template.");
+  }
+
+  redirect(`/parent/chores?reactivatedTemplate=${templateId}`);
 }
 
 export async function createManualAdjustmentAction(formData: FormData) {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { deactivateTemplateAction } from "@/app/parent/actions";
+import { deactivateTemplateAction, reactivateTemplateAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,6 +14,7 @@ export default async function ParentChoresPage({
     createdChore?: string;
     deactivatedTemplate?: string;
     error?: string;
+    reactivatedTemplate?: string;
     updatedTemplate?: string;
   }>;
 }) {
@@ -36,7 +37,6 @@ export default async function ParentChoresPage({
     .from("chore_templates")
     .select("id, title, schedule_type, active, created_at")
     .eq("household_id", householdId)
-    .eq("active", true)
     .order("created_at", { ascending: false });
 
   if (templateError) {
@@ -90,6 +90,12 @@ export default async function ParentChoresPage({
           </p>
         ) : null}
 
+        {params.reactivatedTemplate ? (
+          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            Chore template reactivated.
+          </p>
+        ) : null}
+
         <section aria-labelledby="templates-heading" className="grid gap-3">
           <h2 id="templates-heading" className="text-xl font-semibold">
             Templates
@@ -105,22 +111,34 @@ export default async function ParentChoresPage({
                     <h3 className="text-xl font-semibold leading-snug">{template.title}</h3>
                     <p className="text-base capitalize text-[var(--muted)]">
                       {template.schedule_type.replace("_", "-")}
+                      {!template.active ? " • Inactive" : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Link
-                      className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold"
-                      href={`/parent/chores/${template.id}/edit`}
-                    >
-                      Edit
-                    </Link>
-                    <form action={deactivateTemplateAction}>
-                      <input name="templateId" type="hidden" value={template.id} />
-                      <input name="redirectTo" type="hidden" value="chores" />
-                      <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
-                        Deactivate
-                      </button>
-                    </form>
+                    {template.active ? (
+                      <>
+                        <Link
+                          className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold"
+                          href={`/parent/chores/${template.id}/edit`}
+                        >
+                          Edit
+                        </Link>
+                        <form action={deactivateTemplateAction}>
+                          <input name="templateId" type="hidden" value={template.id} />
+                          <input name="redirectTo" type="hidden" value="chores" />
+                          <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
+                            Deactivate
+                          </button>
+                        </form>
+                      </>
+                    ) : (
+                      <form action={reactivateTemplateAction}>
+                        <input name="templateId" type="hidden" value={template.id} />
+                        <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
+                          Reactivate
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </article>
               ))}

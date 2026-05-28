@@ -97,6 +97,33 @@ export async function deactivateChoreTemplate(
   return data.id;
 }
 
+export async function reactivateChoreTemplate(
+  client: AppSupabaseClient,
+  params: {
+    householdId: string;
+    templateId: string;
+  },
+) {
+  const { data, error } = await client
+    .from("chore_templates")
+    .update({ active: true })
+    .eq("id", params.templateId)
+    .eq("household_id", params.householdId)
+    .eq("active", false)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("That chore template could not be found or is already active.");
+  }
+
+  return data.id;
+}
+
 export async function updateChoreTemplateBasics(
   client: AppSupabaseClient,
   params: {

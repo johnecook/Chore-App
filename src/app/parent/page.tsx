@@ -304,6 +304,13 @@ export default async function ParentHomePage({
                   completedToday?.filter(
                     (instance) => instance.assigned_child_profile_id === child.id,
                   ) ?? [];
+                const childSummary = [
+                  approvalItems.length ? `${approvalItems.length} approval` : null,
+                  remainingItems.length ? `${remainingItems.length} remaining` : null,
+                  completedItems.length ? `${completedItems.length} completed` : null,
+                ]
+                  .filter((item): item is string => item !== null)
+                  .join(" • ");
 
                 return (
                   <details
@@ -313,6 +320,11 @@ export default async function ParentHomePage({
                   >
                     <summary className="cursor-pointer text-xl font-semibold">
                       {child.name}
+                      {childSummary ? (
+                        <span className="ml-2 text-base font-semibold text-[var(--muted)]">
+                          {childSummary}
+                        </span>
+                      ) : null}
                     </summary>
                     <div className="mt-4 grid gap-6">
                       <section className="grid gap-3">
