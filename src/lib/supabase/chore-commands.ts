@@ -131,17 +131,54 @@ export async function updateChoreTemplateBasics(
     templateId: string;
     title: string;
     description?: string | null;
+    scheduleType: Database["public"]["Enums"]["chore_schedule_type"];
+    startDate: string;
+    weeklyWeekdays?: number[] | null;
+    intervalDays?: number | null;
+    oneOffDate?: string | null;
+    dueTimeStart?: string | null;
+    dueTimeEnd?: string | null;
+    assignmentMode: Database["public"]["Enums"]["chore_assignment_mode"];
     valueModel: Database["public"]["Enums"]["chore_value_model"];
     amountCents: number;
+    photoRequired: boolean;
+    approvalRequired: boolean;
+    selectedChildProfileIds: string[];
   },
 ) {
+  if (params.assignmentMode === "selected_children") {
+    const { count, error: childCountError } = await client
+      .from("child_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_household_id", params.householdId)
+      .in("id", params.selectedChildProfileIds);
+
+    if (childCountError) {
+      throw new Error(childCountError.message);
+    }
+
+    if (count !== params.selectedChildProfileIds.length) {
+      throw new Error("Choose children from this household.");
+    }
+  }
+
   const { data, error } = await client
     .from("chore_templates")
     .update({
       title: params.title,
       description: params.description ?? null,
+      schedule_type: params.scheduleType,
+      start_date: params.startDate,
+      weekly_weekdays: params.weeklyWeekdays ?? null,
+      interval_days: params.intervalDays ?? null,
+      one_off_date: params.oneOffDate ?? null,
+      due_time_start: params.dueTimeStart ?? null,
+      due_time_end: params.dueTimeEnd ?? null,
+      assignment_mode: params.assignmentMode,
       value_model: params.valueModel,
       amount_cents: params.amountCents,
+      photo_required: params.photoRequired,
+      approval_required: params.approvalRequired,
     })
     .eq("id", params.templateId)
     .eq("household_id", params.householdId)
@@ -155,6 +192,28 @@ export async function updateChoreTemplateBasics(
 
   if (!data) {
     throw new Error("That chore template could not be found or is inactive.");
+  }
+
+  const { error: deleteAssigneesError } = await client
+    .from("chore_template_assignees")
+    .delete()
+    .eq("template_id", data.id);
+
+  if (deleteAssigneesError) {
+    throw new Error(deleteAssigneesError.message);
+  }
+
+  if (params.assignmentMode === "selected_children") {
+    const { error: insertAssigneesError } = await client.from("chore_template_assignees").insert(
+      params.selectedChildProfileIds.map((childProfileId) => ({
+        template_id: data.id,
+        child_profile_id: childProfileId,
+      })),
+    );
+
+    if (insertAssigneesError) {
+      throw new Error(insertAssigneesError.message);
+    }
   }
 
   return data.id;

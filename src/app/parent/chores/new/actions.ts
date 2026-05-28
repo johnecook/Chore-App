@@ -61,14 +61,6 @@ const choreTemplateFormSchema = z
       });
     }
 
-    if (data.assignmentMode !== "selected_children" && data.selectedChildProfileIds.length > 0) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["selectedChildProfileIds"],
-        message: "Selected children only apply to selected-child chores.",
-      });
-    }
-
     if (data.valueModel === "fixed" && (!data.amountDollars || data.amountDollars <= 0)) {
       ctx.addIssue({
         code: "custom",
@@ -156,7 +148,8 @@ export async function createChoreTemplateAction(formData: FormData) {
       amountCents,
       photoRequired: parsed.data.photoRequired,
       approvalRequired: parsed.data.approvalRequired,
-      selectedChildProfileIds: parsed.data.selectedChildProfileIds,
+      selectedChildProfileIds:
+        parsed.data.assignmentMode === "selected_children" ? parsed.data.selectedChildProfileIds : [],
     });
   } catch (error) {
     choreSetupError(error instanceof Error ? error.message : "Could not create chore.");
