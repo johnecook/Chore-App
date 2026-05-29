@@ -46,6 +46,7 @@ export function createChoreTemplate(
     photoRequired: boolean;
     approvalRequired: boolean;
     selectedChildProfileIds: string[];
+    checklistItems?: string[];
   },
 ) {
   return unwrapRpcId(
@@ -66,6 +67,7 @@ export function createChoreTemplate(
       chore_photo_required: params.photoRequired,
       chore_approval_required: params.approvalRequired,
       selected_child_profile_ids: params.selectedChildProfileIds,
+      chore_checklist_items: params.checklistItems ?? [],
     }),
   );
 }
@@ -144,6 +146,7 @@ export async function updateChoreTemplateBasics(
     photoRequired: boolean;
     approvalRequired: boolean;
     selectedChildProfileIds: string[];
+    checklistItems: string[];
   },
 ) {
   if (params.assignmentMode === "selected_children") {
@@ -203,6 +206,35 @@ export async function updateChoreTemplateBasics(
     throw new Error(deleteAssigneesError.message);
   }
 
+  const { error: deleteChecklistError } = await client
+    .from("chore_template_checklist_items")
+    .delete()
+    .eq("template_id", data.id);
+
+  if (deleteChecklistError) {
+    throw new Error(deleteChecklistError.message);
+  }
+
+  const checklistItems = params.checklistItems
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  if (checklistItems.length) {
+    const { error: insertChecklistError } = await client
+      .from("chore_template_checklist_items")
+      .insert(
+        checklistItems.map((label, index) => ({
+          template_id: data.id,
+          label,
+          position: index + 1,
+        })),
+      );
+
+    if (insertChecklistError) {
+      throw new Error(insertChecklistError.message);
+    }
+  }
+
   if (params.assignmentMode === "selected_children") {
     const { error: insertAssigneesError } = await client.from("chore_template_assignees").insert(
       params.selectedChildProfileIds.map((childProfileId) => ({
@@ -227,6 +259,7 @@ export function submitChoreInstance(
     photoStoragePath?: string | null;
     autoApprovePayPeriodId?: string | null;
     submittedOn?: string;
+    checkedChecklistItemIds?: string[];
   },
 ) {
   return unwrapRpcId(
@@ -236,6 +269,7 @@ export function submitChoreInstance(
       submission_photo_storage_path: params.photoStoragePath ?? null,
       auto_approve_pay_period_id: params.autoApprovePayPeriodId ?? null,
       submitted_on: params.submittedOn,
+      checked_checklist_item_ids: params.checkedChecklistItemIds ?? [],
     }),
   );
 }

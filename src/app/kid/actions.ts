@@ -17,6 +17,7 @@ const instanceSchema = z.object({
 });
 
 const submitChoreSchema = instanceSchema.extend({
+  checkedChecklistItemIds: z.array(z.uuid()),
   note: z.string().trim().max(500).optional(),
 });
 
@@ -57,6 +58,7 @@ export async function claimChoreAction(formData: FormData) {
 export async function submitChoreAction(formData: FormData) {
   const photo = optionalFile(formData.get("photo"));
   const parsed = submitChoreSchema.safeParse({
+    checkedChecklistItemIds: formData.getAll("checkedChecklistItemIds"),
     instanceId: formData.get("instanceId"),
     note: optionalString(formData.get("note")),
   });
@@ -130,6 +132,7 @@ export async function submitChoreAction(formData: FormData) {
   try {
     submissionId = await submitChoreInstance(supabase, {
       instanceId: parsed.data.instanceId,
+      checkedChecklistItemIds: parsed.data.checkedChecklistItemIds,
       note: parsed.data.note ?? null,
       photoStoragePath: uploadedPhotoPath,
     });

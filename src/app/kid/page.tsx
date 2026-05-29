@@ -21,6 +21,10 @@ type ApprovalEvent = Pick<
   Database["public"]["Tables"]["approval_events"]["Row"],
   "instance_id" | "event_type" | "feedback" | "created_at"
 >;
+type ChecklistItem = Pick<
+  Database["public"]["Tables"]["chore_instance_checklist_items"]["Row"],
+  "id" | "instance_id" | "label" | "position" | "required"
+>;
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -65,12 +69,14 @@ function currentDateString() {
 }
 
 function ChoreSubmitCard({
+  checklistItems,
   household,
   instance,
   moneyFeaturesEnabled,
   parentFeedback,
   template,
 }: {
+  checklistItems: ChecklistItem[];
   household?: Household;
   instance: ChoreInstance;
   moneyFeaturesEnabled: boolean;
@@ -104,6 +110,28 @@ function ChoreSubmitCard({
       </div>
       <form action={submitChoreAction} className="grid gap-3" encType="multipart/form-data">
         <input name="instanceId" type="hidden" value={instance.id} />
+        {checklistItems.length ? (
+          <fieldset className="grid gap-3">
+            <legend className="text-base font-semibold">Checklist</legend>
+            <div className="grid gap-2">
+              {checklistItems.map((item) => (
+                <label
+                  className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-medium"
+                  key={item.id}
+                >
+                  <input
+                    className="size-5"
+                    name="checkedChecklistItemIds"
+                    required={item.required}
+                    type="checkbox"
+                    value={item.id}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
         <label className="grid gap-2 text-base font-semibold">
           Note
           <textarea
@@ -133,10 +161,12 @@ function ChoreSubmitCard({
 }
 
 function ChoreClaimCard({
+  checklistItems,
   household,
   instance,
   template,
 }: {
+  checklistItems: ChecklistItem[];
   household?: Household;
   instance: ChoreInstance;
   template?: ChoreTemplate;
@@ -154,6 +184,13 @@ function ChoreClaimCard({
         <p className="text-base text-[var(--muted)]">{dueLabel(instance)}</p>
         {household ? <p className="text-base text-[var(--muted)]">{household.name}</p> : null}
       </div>
+      {checklistItems.length ? (
+        <ul className="grid gap-1 text-base text-[var(--muted)]">
+          {checklistItems.map((item) => (
+            <li key={item.id}>{item.label}</li>
+          ))}
+        </ul>
+      ) : null}
       <form action={claimChoreAction}>
         <input name="instanceId" type="hidden" value={instance.id} />
         <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
@@ -219,6 +256,26 @@ export default async function KidHomePage({
 
   if (instanceError) {
     throw new Error(instanceError.message);
+  }
+
+  const instanceIds = instances?.map((instance) => instance.id) ?? [];
+  const { data: checklistItems, error: checklistError } = instanceIds.length
+    ? await supabase
+        .from("chore_instance_checklist_items")
+        .select("id, instance_id, label, position, required")
+        .in("instance_id", instanceIds)
+        .order("position", { ascending: true })
+    : { data: [], error: null };
+
+  if (checklistError) {
+    throw new Error(checklistError.message);
+  }
+
+  const checklistByInstanceId = new Map<string, ChecklistItem[]>();
+  for (const item of checklistItems ?? []) {
+    const existingItems = checklistByInstanceId.get(item.instance_id) ?? [];
+    existingItems.push(item);
+    checklistByInstanceId.set(item.instance_id, existingItems);
   }
 
   const templateIds = [...new Set(instances?.map((instance) => instance.template_id) ?? [])];
@@ -404,6 +461,7 @@ export default async function KidHomePage({
                 <div className="grid gap-3">
                   {section.items.map((instance) => (
                     <ChoreSubmitCard
+                      checklistItems={checklistByInstanceId.get(instance.id) ?? []}
                       household={householdById.get(instance.earning_household_id)}
                       instance={instance}
                       key={instance.id}
@@ -438,6 +496,7 @@ export default async function KidHomePage({
 
                 return (
                   <ChoreClaimCard
+                    checklistItems={checklistByInstanceId.get(instance.id) ?? []}
                     household={householdById.get(instance.earning_household_id)}
                     instance={instance}
                     key={instance.id}

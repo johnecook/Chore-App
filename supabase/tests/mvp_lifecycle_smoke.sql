@@ -11,6 +11,7 @@ declare
   created_template_id uuid;
   target_instance_id uuid;
   target_claim_id uuid;
+  target_checklist_item_ids uuid[];
   target_submission_id uuid;
   target_approval_id uuid;
   target_pay_period_id uuid;
@@ -81,7 +82,8 @@ begin
     500,
     false,
     true,
-    '{}'::uuid[]
+    '{}'::uuid[],
+    array['Collect kitchen trash', 'Move bag to outside bin']
   );
 
   select id into target_instance_id
@@ -111,6 +113,15 @@ begin
     raise exception 'Expected child claim id';
   end if;
 
+  select array_agg(item.id order by item.position)
+  into target_checklist_item_ids
+  from public.chore_instance_checklist_items item
+  where item.instance_id = target_instance_id;
+
+  if coalesce(cardinality(target_checklist_item_ids), 0) <> 2 then
+    raise exception 'Expected checklist snapshot on chore instance';
+  end if;
+
   if exists (
     select 1
     from public.chore_claims claim
@@ -123,11 +134,23 @@ begin
   target_submission_id := public.submit_chore_instance(
     target_instance_id,
     'Done from MVP smoke',
-    null
+    null,
+    null,
+    current_date,
+    target_checklist_item_ids
   );
 
   if target_submission_id is null then
     raise exception 'Expected submission id';
+  end if;
+
+  if (
+    select count(*)
+    from public.chore_submission_checklist_items item
+    where item.submission_id = target_submission_id
+      and item.checked
+  ) <> 2 then
+    raise exception 'Expected completed checklist submission items';
   end if;
 
   if (

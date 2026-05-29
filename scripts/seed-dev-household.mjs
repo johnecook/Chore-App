@@ -185,11 +185,27 @@ delete from public.approval_events
 where instance_id in (
   select id from public.chore_instances where earning_household_id = :'household_id'
 );
+delete from public.chore_submission_checklist_items
+where submission_id in (
+  select submission.id
+  from public.chore_submissions submission
+  join public.chore_instances instance
+    on instance.id = submission.instance_id
+  where instance.earning_household_id = :'household_id'
+);
 delete from public.chore_submissions
 where instance_id in (
   select id from public.chore_instances where earning_household_id = :'household_id'
 );
+delete from public.chore_instance_checklist_items
+where instance_id in (
+  select id from public.chore_instances where earning_household_id = :'household_id'
+);
 delete from public.chore_instances where earning_household_id = :'household_id';
+delete from public.chore_template_checklist_items
+where template_id in (
+  select id from public.chore_templates where household_id = :'household_id'
+);
 delete from public.chore_template_assignees
 where template_id in (
   select id from public.chore_templates where household_id = :'household_id'
@@ -275,6 +291,22 @@ async function createTemplate(supabase, params) {
     }
   }
 
+  const checklistItems = params.checklistItems?.map((item) => item.trim()).filter(Boolean) ?? [];
+
+  if (checklistItems.length) {
+    const { error } = await supabase.from("chore_template_checklist_items").insert(
+      checklistItems.map((label, index) => ({
+        template_id: templateId,
+        label,
+        position: index + 1,
+      })),
+    );
+
+    if (error) {
+      throw error;
+    }
+  }
+
   return templateId;
 }
 
@@ -300,13 +332,38 @@ async function createInstance(supabase, params) {
 }
 
 async function createSubmission(supabase, params) {
-  return insertOne(supabase, "chore_submissions", {
+  const submissionId = await insertOne(supabase, "chore_submissions", {
     instance_id: params.instanceId,
     child_profile_id: params.childProfileId,
     submitted_by: params.submittedBy,
     attempt_number: params.attemptNumber ?? 1,
     note: params.note,
   });
+
+  const { data: checklistItems, error: checklistError } = await supabase
+    .from("chore_instance_checklist_items")
+    .select("id")
+    .eq("instance_id", params.instanceId);
+
+  if (checklistError) {
+    throw checklistError;
+  }
+
+  if (checklistItems?.length) {
+    const { error } = await supabase.from("chore_submission_checklist_items").insert(
+      checklistItems.map((item) => ({
+        submission_id: submissionId,
+        instance_checklist_item_id: item.id,
+        checked: true,
+      })),
+    );
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  return submissionId;
 }
 
 async function transitionInstanceStatus(supabase, instanceId, status) {
@@ -462,6 +519,7 @@ async function main() {
     approvalRequired: true,
     dueTimeEnd: "20:00",
     assigneeIds: [willChildProfileId, hollisChildProfileId],
+    checklistItems: ["Clear dishes", "Wipe counters", "Start dishwasher"],
   });
 
   const trashTemplateId = await createTemplate(supabase, {
@@ -493,6 +551,7 @@ async function main() {
     photoRequired: true,
     approvalRequired: true,
     assigneeIds: [willChildProfileId],
+    checklistItems: ["Wipe sink", "Clean mirror", "Bring dirty towels to laundry room"],
   });
 
   const bedTemplateId = await createTemplate(supabase, {

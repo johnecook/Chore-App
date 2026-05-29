@@ -25,6 +25,7 @@ const choreTemplateFormSchema = z
     valueModel: valueModelSchema,
     amountDollars: z.coerce.number().min(0).max(9999).optional(),
     selectedChildProfileIds: z.array(z.uuid()),
+    checklistItems: z.array(z.string().trim().max(120)).max(20),
     photoRequired: z.boolean(),
     approvalRequired: z.boolean(),
   })
@@ -102,6 +103,10 @@ export async function createChoreTemplateAction(formData: FormData) {
     valueModel: formData.get("valueModel"),
     amountDollars: optionalString(formData.get("amountDollars")),
     selectedChildProfileIds: formData.getAll("selectedChildProfileIds"),
+    checklistItems: formData
+      .getAll("checklistItems")
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0),
     photoRequired: formData.get("photoRequired") === "on",
     approvalRequired: formData.get("approvalRequired") === "on",
   });
@@ -150,6 +155,7 @@ export async function createChoreTemplateAction(formData: FormData) {
       approvalRequired: parsed.data.approvalRequired,
       selectedChildProfileIds:
         parsed.data.assignmentMode === "selected_children" ? parsed.data.selectedChildProfileIds : [],
+      checklistItems: parsed.data.checklistItems,
     });
   } catch (error) {
     choreSetupError(error instanceof Error ? error.message : "Could not create chore.");

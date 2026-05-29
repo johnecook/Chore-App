@@ -16,6 +16,7 @@ type ChoreTemplateFormDefaults = {
   amountDollars?: string;
   approvalRequired: boolean;
   assignmentMode: AssignmentMode;
+  checklistItems?: string[];
   description?: string;
   dueTimeEnd?: string;
   dueTimeStart?: string;
@@ -56,6 +57,9 @@ export function ChoreTemplateFormFields({
   const [scheduleType, setScheduleType] = useState(defaults.scheduleType);
   const [assignmentMode, setAssignmentMode] = useState(defaults.assignmentMode);
   const [valueModel, setValueModel] = useState(defaults.valueModel);
+  const [checklistItems, setChecklistItems] = useState(() =>
+    defaults.checklistItems?.length ? defaults.checklistItems : [""],
+  );
   const selectedChildProfileIds = useMemo(
     () => new Set(defaults.selectedChildProfileIds ?? []),
     [defaults.selectedChildProfileIds],
@@ -262,6 +266,56 @@ export function ChoreTemplateFormFields({
             </div>
           </fieldset>
         ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Checklist</h2>
+          <button
+            className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]"
+            disabled={checklistItems.length >= 20}
+            onClick={() => setChecklistItems((items) => [...items, ""])}
+            type="button"
+          >
+            Add item
+          </button>
+        </div>
+        <div className="grid gap-3">
+          {checklistItems.map((item, index) => (
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]" key={index}>
+              <label className="grid gap-2 text-lg font-semibold">
+                Item {index + 1}
+                <input
+                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                  maxLength={120}
+                  name="checklistItems"
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setChecklistItems((items) =>
+                      items.map((currentItem, currentIndex) =>
+                        currentIndex === index ? nextValue : currentItem,
+                      ),
+                    );
+                  }}
+                  placeholder="Clean sink"
+                  type="text"
+                  value={item}
+                />
+              </label>
+              {checklistItems.length > 1 ? (
+                <button
+                  className="min-h-12 self-end rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-base font-semibold text-[var(--danger)]"
+                  onClick={() =>
+                    setChecklistItems((items) => items.filter((_, currentIndex) => currentIndex !== index))
+                  }
+                  type="button"
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">

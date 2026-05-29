@@ -102,6 +102,16 @@ export default async function EditChoreTemplatePage({
     throw new Error(assigneeError.message);
   }
 
+  const { data: checklistItems, error: checklistError } = await supabase
+    .from("chore_template_checklist_items")
+    .select("label")
+    .eq("template_id", template.id)
+    .order("position", { ascending: true });
+
+  if (checklistError) {
+    throw new Error(checklistError.message);
+  }
+
   const moneyFeaturesEnabled = household?.money_features_enabled ?? false;
   const children = childProfiles.map((childProfile) => {
     const childUser = childUsers?.find((user) => user.id === childProfile.user_id);
@@ -152,6 +162,7 @@ export default async function EditChoreTemplatePage({
                 amountDollars: dollarsFromCents(template.amount_cents),
                 approvalRequired: template.approval_required,
                 assignmentMode: template.assignment_mode,
+                checklistItems: checklistItems?.map((item) => item.label) ?? [],
                 description: template.description ?? "",
                 dueTimeEnd: template.due_time_end ?? "",
                 dueTimeStart: template.due_time_start ?? "",

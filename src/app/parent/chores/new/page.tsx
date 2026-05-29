@@ -218,6 +218,7 @@ export default async function NewChorePage({
                   amountDollars: presetAmountDollars,
                   approvalRequired: selectedPreset?.suggested_approval_required ?? true,
                   assignmentMode: selectedPreset?.suggested_assignment_mode ?? "selected_children",
+                  checklistItems: [],
                   description: selectedPreset?.description ?? "",
                   dueTimeEnd: selectedPreset?.suggested_due_time_end ?? "",
                   dueTimeStart: selectedPreset?.suggested_due_time_start ?? "",

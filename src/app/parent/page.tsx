@@ -13,6 +13,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+type ApprovalChecklistItem = {
+  id: string;
+  instance_id: string;
+  label: string;
+  position: number;
+  required: boolean;
+};
+
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", {
     currency: "USD",
@@ -179,6 +187,47 @@ export default async function ParentHomePage({
       return rows;
     }, []) ?? [],
   );
+  const { data: approvalChecklistItems, error: approvalChecklistError } = submittedInstanceIds.length
+    ? await supabase
+        .from("chore_instance_checklist_items")
+        .select("id, instance_id, label, position, required")
+        .in("instance_id", submittedInstanceIds)
+        .order("position", { ascending: true })
+    : { data: [], error: null };
+
+  if (approvalChecklistError) {
+    throw new Error(approvalChecklistError.message);
+  }
+
+  const submissionIds = submissions?.map((submission) => submission.id) ?? [];
+  const { data: submittedChecklistItems, error: submittedChecklistError } = submissionIds.length
+    ? await supabase
+        .from("chore_submission_checklist_items")
+        .select("submission_id, instance_checklist_item_id, checked")
+        .in("submission_id", submissionIds)
+    : { data: [], error: null };
+
+  if (submittedChecklistError) {
+    throw new Error(submittedChecklistError.message);
+  }
+
+  const checklistByInstanceId = new Map<string, ApprovalChecklistItem[]>();
+  for (const item of approvalChecklistItems ?? []) {
+    const existingItems = checklistByInstanceId.get(item.instance_id) ?? [];
+    existingItems.push(item);
+    checklistByInstanceId.set(item.instance_id, existingItems);
+  }
+
+  const checkedChecklistItemIdsBySubmissionId = new Map<string, Set<string>>();
+  for (const item of submittedChecklistItems ?? []) {
+    if (!item.checked) {
+      continue;
+    }
+
+    const checkedIds = checkedChecklistItemIdsBySubmissionId.get(item.submission_id) ?? new Set<string>();
+    checkedIds.add(item.instance_checklist_item_id);
+    checkedChecklistItemIdsBySubmissionId.set(item.submission_id, checkedIds);
+  }
   const photoSubmissions =
     submissions?.filter(
       (submission) => submission.photo_storage_path && !submission.photo_deleted_at,
@@ -333,6 +382,10 @@ export default async function ParentHomePage({
                           <div className="grid gap-3">
                             {approvalItems.map((instance) => {
                               const submission = latestSubmissionByInstanceId.get(instance.id);
+                              const checklistItems = checklistByInstanceId.get(instance.id) ?? [];
+                              const checkedChecklistItemIds = submission
+                                ? checkedChecklistItemIdsBySubmissionId.get(submission.id)
+                                : undefined;
 
                               return (
                                 <article
@@ -352,6 +405,21 @@ export default async function ParentHomePage({
                                     </p>
                                     {submission?.note ? (
                                       <p className="text-base">{submission.note}</p>
+                                    ) : null}
+                                    {checklistItems.length ? (
+                                      <div className="grid gap-2 rounded-lg border border-[var(--line)] bg-white p-3">
+                                        <p className="text-base font-semibold">Checklist</p>
+                                        <ul className="grid gap-1 text-base text-[var(--muted)]">
+                                          {checklistItems.map((item) => (
+                                            <li key={item.id}>
+                                              {checkedChecklistItemIds?.has(item.id)
+                                                ? "Done"
+                                                : "Missing"}{" "}
+                                              - {item.label}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
                                     ) : null}
                                     {submission?.photo_storage_path && !submission.photo_deleted_at ? (
                                       <div className="grid gap-3">

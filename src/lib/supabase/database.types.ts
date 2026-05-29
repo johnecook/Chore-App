@@ -333,6 +333,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      chore_template_checklist_items: {
+        Row: {
+          id: string;
+          template_id: string;
+          label: string;
+          position: number;
+          required: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          template_id: string;
+          label: string;
+          position: number;
+          required?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          template_id?: string;
+          label?: string;
+          position?: number;
+          required?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       chore_instances: {
         Row: {
           id: string;
@@ -387,6 +414,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      chore_instance_checklist_items: {
+        Row: {
+          id: string;
+          instance_id: string;
+          template_item_id: string | null;
+          label: string;
+          position: number;
+          required: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          instance_id: string;
+          template_item_id?: string | null;
+          label: string;
+          position: number;
+          required?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          instance_id?: string;
+          template_item_id?: string | null;
+          label?: string;
+          position?: number;
+          required?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       chore_submissions: {
         Row: {
           id: string;
@@ -423,6 +480,27 @@ export type Database = {
           photo_deleted_at?: string | null;
           photo_deleted_by?: string | null;
           submitted_at?: string;
+        };
+        Relationships: [];
+      };
+      chore_submission_checklist_items: {
+        Row: {
+          submission_id: string;
+          instance_checklist_item_id: string;
+          checked: boolean;
+          created_at: string;
+        };
+        Insert: {
+          submission_id: string;
+          instance_checklist_item_id: string;
+          checked?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          submission_id?: string;
+          instance_checklist_item_id?: string;
+          checked?: boolean;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -730,6 +808,7 @@ export type Database = {
           chore_photo_required?: boolean;
           chore_approval_required?: boolean;
           selected_child_profile_ids?: string[];
+          chore_checklist_items?: string[];
         };
         Returns: string;
       };
@@ -883,6 +962,7 @@ export type Database = {
           submission_photo_storage_path?: string | null;
           auto_approve_pay_period_id?: string | null;
           submitted_on?: string;
+          checked_checklist_item_ids?: string[];
         };
         Returns: string;
       };

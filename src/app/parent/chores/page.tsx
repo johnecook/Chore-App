@@ -176,6 +176,25 @@ export default async function ParentChoresPage({
 
   const activeTemplates = choreTemplates?.filter((template) => template.active) ?? [];
   const inactiveTemplates = choreTemplates?.filter((template) => !template.active) ?? [];
+  const templateIds = choreTemplates?.map((template) => template.id) ?? [];
+  const { data: checklistItems, error: checklistError } = templateIds.length
+    ? await supabase
+        .from("chore_template_checklist_items")
+        .select("template_id")
+        .in("template_id", templateIds)
+    : { data: [], error: null };
+
+  if (checklistError) {
+    throw new Error(checklistError.message);
+  }
+
+  const checklistCountByTemplateId = new Map<string, number>();
+  for (const item of checklistItems ?? []) {
+    checklistCountByTemplateId.set(
+      item.template_id,
+      (checklistCountByTemplateId.get(item.template_id) ?? 0) + 1,
+    );
+  }
 
   return (
     <main className="page-shell">
@@ -241,9 +260,18 @@ export default async function ParentChoresPage({
           </div>
           {choreTemplates?.length ? (
             <div className="grid gap-6">
-              <TemplateGroup templates={activeTemplates} title="Active" />
+              <TemplateGroup
+                checklistCountByTemplateId={checklistCountByTemplateId}
+                templates={activeTemplates}
+                title="Active"
+              />
               {inactiveTemplates.length ? (
-                <TemplateGroup inactive templates={inactiveTemplates} title="Inactive" />
+                <TemplateGroup
+                  checklistCountByTemplateId={checklistCountByTemplateId}
+                  inactive
+                  templates={inactiveTemplates}
+                  title="Inactive"
+                />
               ) : null}
             </div>
           ) : (
@@ -258,10 +286,12 @@ export default async function ParentChoresPage({
 }
 
 function TemplateGroup({
+  checklistCountByTemplateId,
   inactive = false,
   templates,
   title,
 }: {
+  checklistCountByTemplateId: Map<string, number>;
   inactive?: boolean;
   templates: ChoreTemplate[];
   title: string;
@@ -277,14 +307,18 @@ function TemplateGroup({
       </h3>
       <div className="grid gap-3">
         {templates.map((template) => {
+          const checklistCount = checklistCountByTemplateId.get(template.id) ?? 0;
           const detailItems = [
             scheduleLabel(template),
             dueWindowLabel(template),
             assignmentLabel(template.assignment_mode),
             valueLabel(template),
+            checklistCount > 0
+              ? `${checklistCount} checklist item${checklistCount === 1 ? "" : "s"}`
+              : null,
             template.photo_required ? "Photo required" : "No photo",
             template.approval_required ? "Parent approval" : "Auto-approve",
-          ];
+          ].filter((item): item is string => item !== null);
 
           return (
             <article
