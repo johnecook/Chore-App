@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { updateChoreTemplateAction } from "@/app/parent/chores/[templateId]/edit/actions";
 import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -130,8 +131,7 @@ export default async function EditChoreTemplatePage({
     template.value_model === "fixed" && !moneyFeaturesEnabled ? "unpaid" : template.value_model;
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -143,13 +143,13 @@ export default async function EditChoreTemplatePage({
         </header>
 
         {queryParams.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {queryParams.error}
           </p>
         ) : null}
 
         {!template.active ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
             This template is inactive. Reactivate support is not part of this edit flow yet.
           </p>
         ) : (
@@ -181,7 +181,6 @@ export default async function EditChoreTemplatePage({
             />
           </form>
         )}
-      </div>
-    </main>
+    </AppShell>
   );
 }

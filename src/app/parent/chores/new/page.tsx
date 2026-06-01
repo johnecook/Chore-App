@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createChoreTemplateAction } from "@/app/parent/chores/new/actions";
 import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -135,8 +136,7 @@ export default async function NewChorePage({
     .filter((category) => category.presets.length > 0);
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -148,7 +148,7 @@ export default async function NewChorePage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
@@ -171,7 +171,7 @@ export default async function NewChorePage({
                 <div className="grid gap-3">
                   {presetsByCategory.map((category) => (
                     <details
-                      className="grid rounded-lg border border-[var(--line)] bg-white p-4"
+                      className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                       key={category.value}
                       open={category.presets.some((preset) => preset.id === selectedPreset?.id)}
                     >
@@ -181,10 +181,10 @@ export default async function NewChorePage({
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         {category.presets.map((preset) => (
                           <a
-                            className={`grid gap-2 rounded-lg border p-4 ${
+                            className={`grid gap-2 rounded-2xl border p-4 ${
                               preset.id === selectedPreset?.id
                                 ? "border-[var(--accent)] bg-[var(--background)]"
-                                : "border-[var(--line)] bg-white"
+                                : "border-[var(--line)] bg-[var(--surface-elevated)]"
                             }`}
                             href={`/parent/chores/new?preset=${preset.id}`}
                             key={preset.id}
@@ -237,11 +237,10 @@ export default async function NewChorePage({
             </form>
           </div>
         ) : (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
             Add a child before creating chores.
           </p>
         )}
-      </div>
-    </main>
+    </AppShell>
   );
 }

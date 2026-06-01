@@ -1,6 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SignOutButton } from "@/components/sign-out-button";
+import {
+  AppScreen,
+  BottomTabBar,
+  HeaderGreeting,
+  SectionHeader,
+  SegmentedControl,
+  TaskRow,
+} from "@/components/rhythm-child-today-static";
 import { requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -8,13 +14,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 type LedgerType = Database["public"]["Enums"]["ledger_transaction_type"];
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cents / 100);
-}
 
 function transactionLabel(type: LedgerType) {
   switch (type) {
@@ -27,6 +26,13 @@ function transactionLabel(type: LedgerType) {
     case "pending_credit":
       return "Pending chore";
   }
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
 }
 
 function formatDate(date: string) {
@@ -77,75 +83,69 @@ export default async function KidMoneyPage() {
       .reduce((total, ledger) => total + Math.abs(ledger.amount_cents), 0) ?? 0;
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
-        <header className="grid gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link className="text-base font-semibold text-[var(--accent-strong)]" href="/kid">
-              Chores
-            </Link>
-            <SignOutButton />
-          </div>
-          <div className="grid gap-2">
-            <h1 className="text-3xl font-semibold leading-tight">Money history</h1>
-            <p className="text-lg text-[var(--muted)]">
-              Review approved chore money, adjustments, and payouts.
-            </p>
-          </div>
-        </header>
+    <AppScreen>
+      <div>
+        <HeaderGreeting initial={profile.displayName.slice(0, 1).toUpperCase()} name="Finances" />
+        <div className="grid gap-5 px-5 pb-5">
+        <SegmentedControl
+          items={[
+            { label: "Wallet", selected: true },
+            { label: "Earnings" },
+            { label: "Spending" },
+            { label: "Giving" },
+          ]}
+        />
 
         <section aria-labelledby="money-summary-heading" className="grid gap-3">
-          <h2 id="money-summary-heading" className="text-xl font-semibold">
-            Summary
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <article className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h3 className="text-base font-semibold text-[var(--muted)]">Available</h3>
-              <p className="text-3xl font-semibold">{formatMoney(approvedBalanceCents)}</p>
-            </article>
-            <article className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4">
-              <h3 className="text-base font-semibold text-[var(--muted)]">Paid</h3>
-              <p className="text-3xl font-semibold">{formatMoney(paidCents)}</p>
-            </article>
-          </div>
+          <SectionHeader title="Wallet" />
+            <div className="rounded-[18px] bg-[linear-gradient(135deg,#263AA4,#0B5C93)] p-4 shadow-[0_16px_34px_rgba(2,7,28,0.28)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Current balance</h3>
+                  <p className="mt-1 text-[40px] font-bold leading-none text-white">
+                    {formatMoney(approvedBalanceCents)}
+                  </p>
+                </div>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#AEEBF2] text-3xl font-bold text-[#071743]">
+                  $
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
+                <div>
+                  <p className="text-sm text-white/70">Paid</p>
+                  <p className="text-xl font-bold text-white">{formatMoney(paidCents)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Available</p>
+                  <p className="text-xl font-bold text-white">{formatMoney(approvedBalanceCents)}</p>
+                </div>
+              </div>
+            </div>
         </section>
 
-        <section aria-labelledby="transactions-heading" className="grid gap-3">
-          <h2 id="transactions-heading" className="text-xl font-semibold">
-            Transactions
-          </h2>
+        <section aria-labelledby="transactions-heading" className="grid gap-2">
+          <SectionHeader action="View all" title="Recent transactions" />
           {ledgerRows?.length ? (
-            <div className="grid gap-3">
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
               {ledgerRows.map((ledger) => (
-                <article
-                  className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4"
+                <TaskRow
+                  amount={`${ledger.amount_cents > 0 ? "+" : ""}${formatMoney(ledger.amount_cents)}`}
+                  icon={ledger.amount_cents < 0 ? "-" : "$"}
+                  meta={formatDate(ledger.effective_date)}
+                  title={ledger.description || transactionLabel(ledger.transaction_type)}
                   key={ledger.id}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold">
-                      {transactionLabel(ledger.transaction_type)}
-                    </h3>
-                    <p
-                      className={`text-lg font-semibold ${
-                        ledger.amount_cents < 0 ? "text-[var(--danger)]" : "text-[var(--accent-strong)]"
-                      }`}
-                    >
-                      {ledger.amount_cents > 0 ? "+" : ""}
-                      {formatMoney(ledger.amount_cents)}
-                    </p>
-                  </div>
-                  <p className="text-base text-[var(--muted)]">{formatDate(ledger.effective_date)}</p>
-                  {ledger.description ? <p className="text-base">{ledger.description}</p> : null}
-                </article>
+                />
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
-              No money activity yet.
-            </p>
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] p-4">
+              <p className="text-lg font-bold text-white">No money activity yet.</p>
+            </div>
           )}
         </section>
+        </div>
       </div>
-    </main>
+      <BottomTabBar active="Money" />
+    </AppScreen>
   );
 }

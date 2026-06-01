@@ -1,6 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SignOutButton } from "@/components/sign-out-button";
+import {
+  AppScreen,
+  BottomTabBar,
+  HeaderGreeting,
+  SectionHeader,
+  TaskRow,
+} from "@/components/rhythm-child-today-static";
 import { requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -8,13 +13,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 type ChoreStatus = Database["public"]["Enums"]["chore_instance_status"];
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cents / 100);
-}
 
 function statusLabel(status: ChoreStatus, paid: boolean) {
   if (paid) {
@@ -41,6 +39,13 @@ function formatDate(date: string) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
   }).format(new Date(`${date}T00:00:00`));
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
 }
 
 export default async function KidHistoryPage() {
@@ -180,73 +185,53 @@ export default async function KidHistoryPage() {
   );
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
-        <header className="grid gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link className="text-base font-semibold text-[var(--accent-strong)]" href="/kid">
-              Chores
-            </Link>
-            <SignOutButton />
-          </div>
-          <div className="grid gap-2">
-            <h1 className="text-3xl font-semibold leading-tight">Chore history</h1>
-            <p className="text-lg text-[var(--muted)]">
-              Review submitted, approved, returned, missed, and paid chores.
-            </p>
-          </div>
-        </header>
+    <AppScreen>
+      <div>
+        <HeaderGreeting initial={profile.displayName.slice(0, 1).toUpperCase()} name="History" />
+        <div className="grid gap-5 px-5 pb-5">
 
-        <section aria-labelledby="kid-history-heading" className="grid gap-3">
-          <h2 id="kid-history-heading" className="text-xl font-semibold">
-            Recent chores
-          </h2>
+        <section aria-labelledby="kid-history-heading" className="grid gap-2">
+          <SectionHeader title="Recent chores" />
           {historyInstances?.length ? (
-            <div className="grid gap-3">
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
               {historyInstances.map((instance) => {
                 const latestSubmission = latestSubmissionByInstanceId.get(instance.id);
                 const latestApprovalEvent = latestApprovalEventByInstanceId.get(instance.id);
                 const paid = paidInstanceIds.has(instance.id);
 
                 return (
-                  <article
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
-                    id={`chore-${instance.id}`}
+                  <TaskRow
+                    amount={
+                      instance.value_model_snapshot === "fixed"
+                        ? formatMoney(instance.amount_cents_snapshot)
+                        : statusLabel(instance.status, paid)
+                    }
+                    done={paid || instance.status === "approved"}
+                    icon={paid || instance.status === "approved" ? "✓" : instance.status === "rejected" ? "↺" : "≡"}
                     key={instance.id}
+                    meta={formatDate(instance.occurrence_date)}
+                    statusLabel={statusLabel(instance.status, paid)}
+                    title={templateTitleById.get(instance.template_id) ?? "Chore"}
                   >
-                    <div className="grid gap-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-semibold leading-snug">
-                          {templateTitleById.get(instance.template_id) ?? "Chore"}
-                        </h3>
-                        <span className="rounded-md border border-[var(--line)] px-2 py-1 text-base font-semibold text-[var(--muted)]">
-                          {statusLabel(instance.status, paid)}
-                        </span>
-                      </div>
-                      <p className="text-base text-[var(--muted)]">
-                        {formatDate(instance.occurrence_date)}
-                        {instance.value_model_snapshot === "fixed"
-                          ? ` • ${formatMoney(instance.amount_cents_snapshot)}`
-                          : ""}
-                      </p>
-                      {latestSubmission?.note ? (
-                        <p className="text-base">Your note: {latestSubmission.note}</p>
-                      ) : null}
-                      {latestApprovalEvent?.feedback ? (
-                        <p className="text-base">Parent note: {latestApprovalEvent.feedback}</p>
-                      ) : null}
-                    </div>
-                  </article>
+                    {latestSubmission?.note ? (
+                      <p className="text-base">Your note: {latestSubmission.note}</p>
+                    ) : null}
+                    {latestApprovalEvent?.feedback ? (
+                      <p className="text-base">Parent note: {latestApprovalEvent.feedback}</p>
+                    ) : null}
+                  </TaskRow>
                 );
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
-              No submitted chores yet.
-            </p>
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] p-4">
+              <p className="text-lg font-bold text-white">No submitted chores yet.</p>
+            </div>
           )}
         </section>
+        </div>
       </div>
-    </main>
+      <BottomTabBar active="History" />
+    </AppScreen>
   );
 }

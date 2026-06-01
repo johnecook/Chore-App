@@ -1,6 +1,15 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { claimChoreAction, submitChoreAction } from "@/app/kid/actions";
-import { SignOutButton } from "@/components/sign-out-button";
+import {
+  AppScreen,
+  BalanceCard,
+  BottomTabBar,
+  Button,
+  HeaderGreeting,
+  SectionHeader,
+  SegmentedControl,
+  TaskRow,
+} from "@/components/rhythm-child-today-static";
 import { buildDateGroupedSections } from "@/domain/kid-home";
 import { requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
@@ -26,13 +35,6 @@ type ChecklistItem = Pick<
   "id" | "instance_id" | "label" | "position" | "required"
 >;
 
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
 function statusLabel(instance: ChoreInstance) {
   if (instance.status === "available") {
     return "Available";
@@ -51,6 +53,13 @@ function statusLabel(instance: ChoreInstance) {
   }
 
   return "Ready to submit";
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
 }
 
 function dueLabel(instance: ChoreInstance) {
@@ -84,29 +93,39 @@ function ChoreSubmitCard({
   template?: ChoreTemplate;
 }) {
   return (
-    <article
-      className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
-      id={`chore-${instance.id}`}
+    <TaskRow
+      amount={
+        moneyFeaturesEnabled && instance.value_model_snapshot === "fixed"
+          ? formatMoney(instance.amount_cents_snapshot)
+          : statusLabel(instance)
+      }
+      done={instance.status === "submitted"}
+      meta={
+        <>
+          {dueLabel(instance)}
+          {household ? ` • ${household.name}` : ""}
+        </>
+      }
+      statusLabel={statusLabel(instance)}
+      icon={instance.status === "rejected" ? "↺" : "▭"}
+      title={template?.title ?? "Chore"}
     >
       <div className="grid gap-1">
-        <h3 className="text-xl font-semibold leading-snug">{template?.title ?? "Chore"}</h3>
         {template?.description ? (
           <p className="text-base text-[var(--muted)]">{template.description}</p>
         ) : null}
-        <p className="text-base text-[var(--muted)]">{dueLabel(instance)}</p>
-        {household ? <p className="text-base text-[var(--muted)]">{household.name}</p> : null}
         {parentFeedback ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-base">
             Parent note: {parentFeedback}
           </p>
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2 text-base font-semibold">
-        <span>{statusLabel(instance)}</span>
-        {moneyFeaturesEnabled && instance.value_model_snapshot === "fixed" ? (
-          <span>{formatMoney(instance.amount_cents_snapshot)}</span>
+        {instance.photo_required_snapshot ? (
+          <span className="rounded-full border border-[#AEEBF2]/30 bg-white/[0.08] px-3 py-1 text-sm text-[#AEEBF2]">
+            Photo required
+          </span>
         ) : null}
-        {instance.photo_required_snapshot ? <span>Photo required</span> : null}
       </div>
       <form action={submitChoreAction} className="grid gap-3" encType="multipart/form-data">
         <input name="instanceId" type="hidden" value={instance.id} />
@@ -116,7 +135,7 @@ function ChoreSubmitCard({
             <div className="grid gap-2">
               {checklistItems.map((item) => (
                 <label
-                  className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-medium"
+                  className="flex min-h-12 items-center gap-3 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-3 py-2 text-base font-medium text-white"
                   key={item.id}
                 >
                   <input
@@ -135,7 +154,7 @@ function ChoreSubmitCard({
         <label className="grid gap-2 text-base font-semibold">
           Note
           <textarea
-            className="min-h-24 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-24 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-4 py-3 text-lg text-white"
             maxLength={500}
             name="note"
           />
@@ -145,18 +164,18 @@ function ChoreSubmitCard({
             Photo proof
             <input
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg file:mr-4 file:rounded-md file:border-0 file:bg-[var(--background)] file:px-3 file:py-2 file:text-base file:font-semibold file:text-[var(--accent-strong)]"
+              className="min-h-12 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-4 py-3 text-lg file:mr-4 file:rounded-md file:border-0 file:bg-[#061842] file:px-3 file:py-2 file:text-base file:font-semibold file:text-[#AEEBF2]"
               name="photo"
               required
               type="file"
             />
           </label>
         ) : null}
-        <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+        <Button>
           Submit
-        </button>
+        </Button>
       </form>
-    </article>
+    </TaskRow>
   );
 }
 
@@ -172,17 +191,21 @@ function ChoreClaimCard({
   template?: ChoreTemplate;
 }) {
   return (
-    <article
-      className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
-      id={`chore-${instance.id}`}
+    <TaskRow
+      amount="Available"
+      meta={
+        <>
+          {dueLabel(instance)}
+          {household ? ` • ${household.name}` : ""}
+        </>
+      }
+      icon="+"
+      title={template?.title ?? "Chore"}
     >
       <div className="grid gap-1">
-        <h3 className="text-xl font-semibold leading-snug">{template?.title ?? "Chore"}</h3>
         {template?.description ? (
           <p className="text-base text-[var(--muted)]">{template.description}</p>
         ) : null}
-        <p className="text-base text-[var(--muted)]">{dueLabel(instance)}</p>
-        {household ? <p className="text-base text-[var(--muted)]">{household.name}</p> : null}
       </div>
       {checklistItems.length ? (
         <ul className="grid gap-1 text-base text-[var(--muted)]">
@@ -193,11 +216,11 @@ function ChoreClaimCard({
       ) : null}
       <form action={claimChoreAction}>
         <input name="instanceId" type="hidden" value={instance.id} />
-        <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+        <Button>
           Claim
-        </button>
+        </Button>
       </form>
-    </article>
+    </TaskRow>
   );
 }
 
@@ -207,6 +230,11 @@ export default async function KidHomePage({
   searchParams: Promise<{ claimed?: string; error?: string; submitted?: string }>;
 }) {
   const [profile, params] = await Promise.all([requireCurrentProfile(), searchParams]);
+
+  if (profile.appRole === "parent") {
+    redirect("/parent");
+  }
+
   const supabase = await createSupabaseServerClient();
 
   const { data: childProfile, error: childProfileError } = await supabase
@@ -353,113 +381,95 @@ export default async function KidHomePage({
   const unreadNotificationCount = unreadNotifications?.length ?? 0;
   const approvedBalanceCents =
     ledgerRows?.reduce((total, ledger) => total + ledger.amount_cents, 0) ?? 0;
-  const waitingValueCents = moneyFeaturesEnabled ? waitingChores.reduce(
-    (total, instance) =>
-      total +
-      (instance.value_model_snapshot === "fixed" ? instance.amount_cents_snapshot : 0),
-    0,
-  ) : 0;
-  const recentPaidCents =
-    ledgerRows
-      ?.filter((ledger) => ledger.transaction_type === "payout")
-      .reduce((total, ledger) => total + Math.abs(ledger.amount_cents), 0) ?? 0;
+  const completedCount = waitingChores.length;
+  const totalVisibleTasks = toDoChores.length + waitingChores.length;
+  const progressPercentage = totalVisibleTasks ? Math.round((completedCount / totalVisibleTasks) * 100) : 0;
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
-        <header className="grid gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link className="text-base font-semibold text-[var(--accent-strong)]" href="/">
-              Chores
-            </Link>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                className="text-base font-semibold text-[var(--accent-strong)]"
-                href="/kid/history"
+    <AppScreen>
+      <div>
+        <HeaderGreeting
+          action={
+            <a
+              aria-label={`Notifications${unreadNotificationCount ? `, ${unreadNotificationCount} unread` : ""}`}
+              className="relative flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] text-xl text-white"
+              href="/notifications"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
               >
-                History
-              </Link>
-              <Link
-                className="text-base font-semibold text-[var(--accent-strong)]"
-                href="/notifications"
-              >
-                Notifications{unreadNotificationCount ? ` (${unreadNotificationCount})` : ""}
-              </Link>
-              <SignOutButton />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <h1 className="text-3xl font-semibold leading-tight">Today</h1>
-            <p className="text-lg text-[var(--muted)]">
-              {profile.displayName}, here is what needs attention now.
-            </p>
-          </div>
-        </header>
+                <path
+                  d="M15.5 18a3.5 3.5 0 0 1-7 0M5.5 16.5h13l-1.6-2.3V10a4.9 4.9 0 0 0-9.8 0v4.2l-1.6 2.3Z"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+              {unreadNotificationCount ? (
+                <span className="absolute right-1.5 top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#2CEBFF] px-1 text-xs font-bold leading-none text-[#061842]">
+                  {unreadNotificationCount}
+                </span>
+              ) : null}
+            </a>
+          }
+          initial={profile.displayName.slice(0, 1).toUpperCase()}
+          name={`${profile.displayName}!`}
+        />
+        <div className="grid gap-5 px-5 pb-5">
+        <SegmentedControl
+          items={[
+            { label: "Today", selected: true },
+            { label: "This Week" },
+            { label: "All" },
+          ]}
+        />
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <div className="rounded-[18px] border border-[#ffb4b4]/40 bg-[#ffb4b4]/10 p-4 text-lg font-medium text-[#ffb4b4]">
             {params.error}
-          </p>
+          </div>
         ) : null}
 
         {params.claimed ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <div className="rounded-[18px] bg-white/[0.08] p-4 text-lg font-medium text-white">
             Chore claimed.
-          </p>
+          </div>
         ) : null}
 
         {params.submitted ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <div className="rounded-[18px] bg-white/[0.08] p-4 text-lg font-medium text-white">
             Chore submitted.
-          </p>
+          </div>
         ) : null}
 
         {!childProfile ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
-            Accept a household invite before chores can appear here.
-          </p>
+          <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] p-4">
+            <p className="text-lg font-bold text-white">No household yet</p>
+            <p className="mt-1 text-base text-white/75">
+              Accept a household invite before chores can appear here.
+            </p>
+          </div>
         ) : null}
 
-        {childProfile && moneyFeaturesEnabled ? (
-          <section aria-labelledby="money-heading" className="grid gap-3">
-            <h2 id="money-heading" className="text-xl font-semibold">
-              Money
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <article className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4">
-                <h3 className="text-base font-semibold text-[var(--muted)]">Approved</h3>
-                <p className="text-2xl font-semibold">{formatMoney(approvedBalanceCents)}</p>
-              </article>
-              <article className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4">
-                <h3 className="text-base font-semibold text-[var(--muted)]">Waiting</h3>
-                <p className="text-2xl font-semibold">{formatMoney(waitingValueCents)}</p>
-              </article>
-              <article className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4">
-                <h3 className="text-base font-semibold text-[var(--muted)]">Paid</h3>
-                <p className="text-2xl font-semibold">{formatMoney(recentPaidCents)}</p>
-              </article>
+        {toDoChores.length || waitingChores.length ? (
+          <section className="grid gap-2" aria-labelledby="tasks-heading">
+            <SectionHeader
+              action={`${completedCount} of ${totalVisibleTasks} done`}
+              title="My tasks"
+            />
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.10]">
+              <div
+                className="h-full rounded-full bg-[#45F1F1]"
+                style={{ width: `${progressPercentage}%` }}
+              />
             </div>
-            <Link
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-lg font-semibold"
-              href="/kid/money"
-            >
-              View money history
-            </Link>
-          </section>
-        ) : null}
-
-        {toDoChores.length ? (
-          toDoSections.map((section) =>
-            section.items.length ? (
-              <section aria-labelledby={`${section.id}-heading`} className="grid gap-3" key={section.id}>
-                <div className="grid gap-1">
-                  <h2 id={`${section.id}-heading`} className="text-xl font-semibold">
-                    {section.title}
-                  </h2>
-                  <p className="text-base text-[var(--muted)]">{section.description}</p>
-                </div>
-                <div className="grid gap-3">
-                  {section.items.map((instance) => (
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
+              {toDoSections.map((section) =>
+                section.items.map((instance) => (
                     <ChoreSubmitCard
                       checklistItems={checklistByInstanceId.get(instance.id) ?? []}
                       household={householdById.get(instance.earning_household_id)}
@@ -469,33 +479,44 @@ export default async function KidHomePage({
                       parentFeedback={latestRejectedFeedbackByInstanceId.get(instance.id)?.feedback}
                       template={templateById.get(instance.template_id)}
                     />
-                  ))}
-                </div>
-              </section>
-            ) : null,
-          )
-        ) : (
-          <section aria-labelledby="today-heading" className="grid gap-3">
-            <h2 id="today-heading" className="text-xl font-semibold">
-              Today
-            </h2>
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
-              No chores are ready to submit.
-            </p>
+                )),
+              )}
+              {waitingChores.map((instance) => {
+                const template = templateById.get(instance.template_id);
+
+                return (
+                  <TaskRow
+                    amount={
+                      moneyFeaturesEnabled && instance.value_model_snapshot === "fixed"
+                        ? formatMoney(instance.amount_cents_snapshot)
+                        : "Submitted"
+                    }
+                    done
+                    icon="✓"
+                    key={instance.id}
+                    meta={householdById.get(instance.earning_household_id)?.name}
+                    statusLabel={statusLabel(instance)}
+                    title={template?.title ?? "Chore"}
+                  />
+                );
+              })}
+            </div>
           </section>
+        ) : (
+          <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] p-4">
+            <p className="text-lg font-bold text-white">No chores are ready to submit.</p>
+          </div>
         )}
 
         {availableChores.length ? (
-          <section aria-labelledby="available-heading" className="grid gap-3">
-            <h2 id="available-heading" className="text-xl font-semibold">
-              Available
-            </h2>
-            <div className="grid gap-3">
+          <section className="grid gap-2" aria-labelledby="available-heading">
+            <SectionHeader title="Available" />
+            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
               {availableChores.map((instance) => {
                 const template = templateById.get(instance.template_id);
 
                 return (
-                  <ChoreClaimCard
+                    <ChoreClaimCard
                     checklistItems={checklistByInstanceId.get(instance.id) ?? []}
                     household={householdById.get(instance.earning_household_id)}
                     instance={instance}
@@ -508,37 +529,12 @@ export default async function KidHomePage({
           </section>
         ) : null}
 
-        {waitingChores.length ? (
-          <section aria-labelledby="waiting-heading" className="grid gap-3">
-            <h2 id="waiting-heading" className="text-xl font-semibold">
-              Waiting
-            </h2>
-            <div className="grid gap-3">
-              {waitingChores.map((instance) => {
-                const template = templateById.get(instance.template_id);
-
-                return (
-                  <article
-                    className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
-                    id={`chore-${instance.id}`}
-                    key={instance.id}
-                  >
-                    <h3 className="text-xl font-semibold leading-snug">
-                      {template?.title ?? "Chore"}
-                    </h3>
-                    <p className="text-lg font-medium">{statusLabel(instance)}</p>
-                    {householdById.get(instance.earning_household_id) ? (
-                      <p className="text-base text-[var(--muted)]">
-                        {householdById.get(instance.earning_household_id)?.name}
-                      </p>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+        {childProfile && moneyFeaturesEnabled ? (
+          <BalanceCard balanceCents={approvedBalanceCents} href="/kid/money" />
         ) : null}
+        </div>
       </div>
-    </main>
+      <BottomTabBar />
+    </AppScreen>
   );
 }

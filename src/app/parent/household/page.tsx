@@ -7,6 +7,7 @@ import {
   updateHouseholdAction,
 } from "@/app/parent/household/actions";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -108,8 +109,7 @@ export default async function ParentHouseholdPage({
   const pendingInvites = invitations?.filter((invite) => !invite.accepted_at && !invite.revoked_at) ?? [];
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -121,19 +121,19 @@ export default async function ParentHouseholdPage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
 
         {params.saved ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Household updated.
           </p>
         ) : null}
 
         {params.invited ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Invite created. Link:{" "}
             <span className="break-all font-semibold text-[var(--accent-strong)]">
               /invite/{params.invited}
@@ -145,7 +145,7 @@ export default async function ParentHouseholdPage({
           <h2 id="household-details-heading" className="text-xl font-semibold">
             Details
           </h2>
-          <div className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
+          <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
             <div className="grid gap-1">
               <h3 className="text-2xl font-semibold leading-tight">{household.name}</h3>
               <p className="text-base text-[var(--muted)]">{household.timezone}</p>
@@ -158,7 +158,7 @@ export default async function ParentHouseholdPage({
                 <label className="grid gap-2 text-lg font-semibold">
                   Household name
                   <input
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                     defaultValue={household.name}
                     name="householdName"
                     required
@@ -168,7 +168,7 @@ export default async function ParentHouseholdPage({
                 <label className="grid gap-2 text-lg font-semibold">
                   Timezone
                   <select
-                    className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                     defaultValue={household.timezone}
                     name="householdTimezone"
                     required
@@ -183,7 +183,7 @@ export default async function ParentHouseholdPage({
                 <p className="text-base text-[var(--muted)]">
                   Money mode is kept separate because changing it can affect payout setup and paid chores.
                 </p>
-                <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
                   Save household
                 </button>
               </form>
@@ -201,7 +201,7 @@ export default async function ParentHouseholdPage({
 
               return (
                 <article
-                  className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4"
+                  className="grid gap-1 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={membership.user_id}
                 >
                   <h3 className="text-xl font-semibold leading-snug">
@@ -217,7 +217,7 @@ export default async function ParentHouseholdPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Household role
                         <select
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           defaultValue={membership.role}
                           name="role"
                         >
@@ -225,7 +225,7 @@ export default async function ParentHouseholdPage({
                           <option value="parent">Parent</option>
                         </select>
                       </label>
-                      <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold">
+                      <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold">
                         Save role
                       </button>
                     </form>
@@ -250,7 +250,7 @@ export default async function ParentHouseholdPage({
 
                 return (
                   <article
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                     key={membership.user_id}
                   >
                     <div className="grid gap-1">
@@ -261,7 +261,7 @@ export default async function ParentHouseholdPage({
                     </div>
                     {childProfile ? (
                       <Link
-                        className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-lg font-semibold"
+                        className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
                         href={`/parent/children/${childProfile.id}/availability`}
                       >
                         Set availability
@@ -271,7 +271,7 @@ export default async function ParentHouseholdPage({
                 );
               })
             ) : (
-              <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+              <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
                 No children have joined yet.
               </p>
             )}
@@ -286,7 +286,7 @@ export default async function ParentHouseholdPage({
             <div className="grid gap-3">
               {pendingInvites.map((invite) => (
                 <article
-                  className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                  className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={invite.id}
                 >
                   <div className="grid gap-1">
@@ -309,7 +309,7 @@ export default async function ParentHouseholdPage({
         ) : null}
 
         {canManageHousehold ? (
-          <details className="grid rounded-lg border border-[var(--line)] bg-white p-4" open={!children.length}>
+          <details className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4" open={!children.length}>
             <summary className="cursor-pointer text-xl font-semibold">
               Invite a child
             </summary>
@@ -321,7 +321,7 @@ export default async function ParentHouseholdPage({
               <label className="grid gap-2 text-lg font-semibold">
                 Child name
                 <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                   name="childName"
                   required
                   type="text"
@@ -332,14 +332,14 @@ export default async function ParentHouseholdPage({
                 Child email
                 <input
                   autoComplete="email"
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                   name="childEmail"
                   required
                   type="email"
                 />
               </label>
 
-              <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+              <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
                 Create invite
               </button>
             </form>
@@ -347,7 +347,7 @@ export default async function ParentHouseholdPage({
         ) : null}
 
         {canManageHousehold ? (
-          <details className="grid rounded-lg border border-[var(--line)] bg-white p-4">
+          <details className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
             <summary className="cursor-pointer text-xl font-semibold">
               Invite a parent
             </summary>
@@ -361,14 +361,14 @@ export default async function ParentHouseholdPage({
                 Parent email
                 <input
                   autoComplete="email"
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                   name="parentEmail"
                   required
                   type="email"
                 />
               </label>
 
-              <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+              <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
                 Create invite
               </button>
             </form>
@@ -383,7 +383,7 @@ export default async function ParentHouseholdPage({
             {invitations?.length ? (
               invitations.map((invite) => (
                 <article
-                  className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                  className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={invite.id}
                 >
                   <div className="grid gap-1">
@@ -411,13 +411,12 @@ export default async function ParentHouseholdPage({
                 </article>
               ))
             ) : (
-              <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+              <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
                 No invite history yet.
               </p>
             )}
           </div>
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }

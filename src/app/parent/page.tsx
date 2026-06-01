@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   approveSubmissionAction,
@@ -7,6 +6,16 @@ import {
   syncScheduleAction,
 } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
+import {
+  AppShell,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  MetricCard,
+  SegmentedControl,
+  TaskRow,
+} from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { CHORE_SUBMISSION_PHOTO_BUCKET } from "@/lib/supabase/chore-photo-storage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -247,70 +256,93 @@ export default async function ParentHomePage({
   );
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
-        <header className="grid gap-4">
-          <ParentNav />
-          <div className="grid gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="grid gap-2">
-                <h1 className="text-3xl font-semibold leading-tight">Parent dashboard</h1>
-                <p className="text-lg text-[var(--muted)]">
-                  {profile.displayName}, review what needs attention today.
-                </p>
-              </div>
-              <form action={syncScheduleAction}>
-                <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
-                  Sync
-                </button>
-              </form>
-            </div>
+    <AppShell
+      variant="web"
+    >
+        <ParentNav />
+        <header className="grid gap-4 rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,rgba(7,24,66,0.96),rgba(12,37,90,0.92))] p-5 shadow-[0_22px_70px_rgba(2,7,28,0.26)] md:grid-cols-[1fr_auto] md:items-end">
+          <div className="grid gap-1">
+            <p className="text-base font-medium text-white/80">Good morning,</p>
+            <h1 className="text-4xl font-semibold leading-tight text-white">Parent dashboard</h1>
+            <p className="max-w-2xl text-base text-[var(--muted)]">
+              {profile.displayName}, review approvals, open responsibilities, and household activity.
+            </p>
           </div>
+          <form action={syncScheduleAction}>
+            <Button className="min-h-12 px-5 py-3 text-base" variant="secondary">
+              Sync schedule
+            </Button>
+          </form>
         </header>
 
+        <SegmentedControl
+          items={[
+            { label: "Overview", selected: true },
+            { label: "Kids" },
+            { label: "Household" },
+          ]}
+        />
+
+        <Card as="section" aria-label="Household status">
+          <div className="grid gap-1">
+            <p className="text-base font-semibold text-white">Household status</p>
+            <p className="text-sm text-[var(--muted)]">What needs parent attention today.</p>
+          </div>
+          <div className="grid grid-cols-3">
+            <MetricCard icon="!" label="Needs review" value={waitingApproval?.length ?? 0} />
+            <MetricCard
+              icon="≡"
+              label="Open today"
+              value={(remainingToday?.length ?? 0) + (availableToday?.length ?? 0)}
+            />
+            <MetricCard
+              icon="✓"
+              label="Completed"
+              value={completedToday?.length ?? 0}
+            />
+          </div>
+        </Card>
+
         {!hasChildren ? (
-          <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
+          <Card as="section">
             <h2 className="text-xl font-semibold">Set up household members</h2>
             <p className="text-base text-[var(--muted)]">
               Add your first child before creating chore templates.
             </p>
-            <Link
-              className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
-              href="/parent/household"
-            >
+            <ButtonLink href="/parent/household">
               Open household
-            </Link>
-          </section>
+            </ButtonLink>
+          </Card>
         ) : null}
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <Card as="div" className="border-[var(--danger)] text-lg font-medium text-[var(--danger)]">
             {params.error}
-          </p>
+          </Card>
         ) : null}
 
         {params.approved ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <Card as="div" className="text-lg font-medium">
             Chore approved.
-          </p>
+          </Card>
         ) : null}
 
         {params.rejected ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <Card as="div" className="text-lg font-medium">
             Chore sent back.
-          </p>
+          </Card>
         ) : null}
 
         {params.photoDeleted ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <Card as="div" className="text-lg font-medium">
             Photo removed.
-          </p>
+          </Card>
         ) : null}
 
         {params.synced ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <Card as="div" className="text-lg font-medium">
             Chore schedule synced.
-          </p>
+          </Card>
         ) : null}
 
         {availableToday?.length ? (
@@ -320,15 +352,15 @@ export default async function ParentHomePage({
             </h2>
             <div className="grid gap-3">
               {availableToday.map((instance) => (
-                <article
-                  className="rounded-lg border border-[var(--line)] bg-white p-4"
+                <TaskRow
+                  status="Available"
+                  statusTone="accent"
+                  icon="+"
+                  title={templateTitleById.get(instance.template_id) ?? "Chore"}
                   key={instance.id}
                 >
-                  <h3 className="text-lg font-semibold">
-                    {templateTitleById.get(instance.template_id) ?? "Chore"}
-                  </h3>
                   <p className="text-base text-[var(--muted)]">Available until claimed.</p>
-                </article>
+                </TaskRow>
               ))}
             </div>
           </section>
@@ -363,14 +395,14 @@ export default async function ParentHomePage({
 
                 return (
                   <details
-                    className="grid rounded-lg border border-[var(--line)] bg-white p-4"
+                    className="rhythm-card grid p-4 sm:p-5"
                     key={child.id}
                     open
                   >
                     <summary className="cursor-pointer text-xl font-semibold">
                       {child.name}
                       {childSummary ? (
-                        <span className="ml-2 text-base font-semibold text-[var(--muted)]">
+                        <span className="ml-2 inline-block text-base font-semibold text-[var(--muted)]">
                           {childSummary}
                         </span>
                       ) : null}
@@ -389,7 +421,7 @@ export default async function ParentHomePage({
 
                               return (
                                 <article
-                                  className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                                  className="grid gap-4 rounded-3xl border border-[var(--line)] bg-[var(--surface-soft)] p-4"
                                   id={`approval-${instance.id}`}
                                   key={instance.id}
                                 >
@@ -407,7 +439,7 @@ export default async function ParentHomePage({
                                       <p className="text-base">{submission.note}</p>
                                     ) : null}
                                     {checklistItems.length ? (
-                                      <div className="grid gap-2 rounded-lg border border-[var(--line)] bg-white p-3">
+                                      <div className="grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3">
                                         <p className="text-base font-semibold">Checklist</p>
                                         <ul className="grid gap-1 text-base text-[var(--muted)]">
                                           {checklistItems.map((item) => (
@@ -425,7 +457,7 @@ export default async function ParentHomePage({
                                       <div className="grid gap-3">
                                         {signedPhotoUrlBySubmissionId.get(submission.id) ? (
                                           <a
-                                            className="block overflow-hidden rounded-lg border border-[var(--line)] bg-white"
+                                            className="block overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]"
                                             href={signedPhotoUrlBySubmissionId.get(submission.id)}
                                             rel="noreferrer"
                                             target="_blank"
@@ -439,15 +471,15 @@ export default async function ParentHomePage({
                                             />
                                           </a>
                                         ) : (
-                                          <p className="rounded-lg border border-[var(--line)] bg-white p-3 text-base text-[var(--muted)]">
+                                          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-base text-[var(--muted)]">
                                             Photo proof could not be loaded.
                                           </p>
                                         )}
                                         <form action={deleteSubmissionPhotoAction}>
                                           <input name="submissionId" type="hidden" value={submission.id} />
-                                          <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-base font-semibold text-[var(--danger)]">
+                                          <Button className="min-h-11 px-4 py-2 text-base" variant="danger">
                                             Remove photo
-                                          </button>
+                                          </Button>
                                         </form>
                                       </div>
                                     ) : null}
@@ -460,15 +492,15 @@ export default async function ParentHomePage({
                                         <label className="grid gap-2 text-base font-semibold">
                                           Approval note
                                           <input
-                                            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-lg"
                                             maxLength={500}
                                             name="feedback"
                                             type="text"
                                           />
                                         </label>
-                                        <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+                                        <Button>
                                           Approve
-                                        </button>
+                                        </Button>
                                       </form>
 
                                       <form action={rejectSubmissionAction} className="grid gap-3">
@@ -476,16 +508,16 @@ export default async function ParentHomePage({
                                         <label className="grid gap-2 text-base font-semibold">
                                           Send back note
                                           <input
-                                            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-lg"
                                             maxLength={500}
                                             name="feedback"
                                             required
                                             type="text"
                                           />
                                         </label>
-                                        <button className="min-h-12 rounded-lg border border-[var(--danger)] bg-white px-4 py-3 text-lg font-semibold text-[var(--danger)]">
+                                        <Button variant="danger">
                                           Send back
-                                        </button>
+                                        </Button>
                                       </form>
                                     </div>
                                   ) : (
@@ -498,9 +530,7 @@ export default async function ParentHomePage({
                             })}
                           </div>
                         ) : (
-                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                            Nothing needs approval.
-                          </p>
+                          <EmptyState title="Nothing needs approval." />
                         )}
                       </section>
 
@@ -509,23 +539,17 @@ export default async function ParentHomePage({
                         {remainingItems.length ? (
                           <div className="grid gap-3">
                             {remainingItems.map((instance) => (
-                              <article
-                                className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                              <TaskRow
+                                status={instance.status === "rejected" ? "Needs another try" : "Assigned"}
+                                statusTone={instance.status === "rejected" ? "danger" : "default"}
+                                icon="≡"
+                                title={templateTitleById.get(instance.template_id) ?? "Chore"}
                                 key={instance.id}
-                              >
-                                <h4 className="text-lg font-semibold">
-                                  {templateTitleById.get(instance.template_id) ?? "Chore"}
-                                </h4>
-                                <p className="text-base text-[var(--muted)]">
-                                  {instance.status === "rejected" ? "Needs another try" : "Assigned"}
-                                </p>
-                              </article>
+                              />
                             ))}
                           </div>
                         ) : (
-                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                            Nothing remains for today.
-                          </p>
+                          <EmptyState title="Nothing remains for today." />
                         )}
                       </section>
 
@@ -534,26 +558,22 @@ export default async function ParentHomePage({
                         {completedItems.length ? (
                           <div className="grid gap-3">
                             {completedItems.map((instance) => (
-                              <article
-                                className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4"
+                              <TaskRow
+                                amountCents={
+                                  instance.value_model_snapshot === "fixed"
+                                    ? instance.amount_cents_snapshot
+                                    : undefined
+                                }
+                                status="Approved"
+                                statusTone="success"
+                                icon="✓"
+                                title={templateTitleById.get(instance.template_id) ?? "Chore"}
                                 key={instance.id}
-                              >
-                                <h4 className="text-lg font-semibold">
-                                  {templateTitleById.get(instance.template_id) ?? "Chore"}
-                                </h4>
-                                <p className="text-base text-[var(--muted)]">
-                                  Approved
-                                  {instance.value_model_snapshot === "fixed"
-                                    ? ` • ${formatMoney(instance.amount_cents_snapshot)}`
-                                    : ""}
-                                </p>
-                              </article>
+                              />
                             ))}
                           </div>
                         ) : (
-                          <p className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4 text-lg text-[var(--muted)]">
-                            No completed items yet today.
-                          </p>
+                          <EmptyState title="No completed items yet today." />
                         )}
                       </section>
                     </div>
@@ -563,7 +583,6 @@ export default async function ParentHomePage({
             </div>
           </section>
         ) : null}
-      </div>
-    </main>
+    </AppShell>
   );
 }

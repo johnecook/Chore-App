@@ -4,7 +4,9 @@ import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
 } from "@/app/notifications/actions";
+import { ParentNav } from "@/components/parent-nav";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AppShell } from "@/components/ui";
 import { requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -87,18 +89,21 @@ export default async function NotificationsPage({
   const unreadCount = notifications?.filter((notification) => !notification.read_at).length ?? 0;
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant={profile.appRole === "parent" ? "web" : "mobile"}>
         <header className="grid gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
-              className="text-base font-semibold text-[var(--accent-strong)]"
-              href={homePathForRole(profile.appRole)}
-            >
-              Chores
-            </Link>
-            <SignOutButton />
-          </div>
+          {profile.appRole === "parent" ? (
+            <ParentNav />
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                className="text-base font-semibold text-[var(--accent-strong)]"
+                href={homePathForRole(profile.appRole)}
+              >
+                Rhythm
+              </Link>
+              <SignOutButton />
+            </div>
+          )}
           <div className="grid gap-2">
             <h1 className="text-3xl font-semibold leading-tight">Notifications</h1>
             <p className="text-lg text-[var(--muted)]">
@@ -108,27 +113,27 @@ export default async function NotificationsPage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
 
         {params.read ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Notifications updated.
           </p>
         ) : null}
 
         <nav aria-label="Notification navigation" className="grid gap-3 sm:grid-cols-2">
           <Link
-            className="rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-lg font-semibold"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
             href={homePathForRole(profile.appRole)}
           >
             Back to {profile.appRole === "child" ? "kid home" : "parent dashboard"}
           </Link>
           <form action={markAllNotificationsReadAction}>
             <button
-              className="min-h-12 w-full rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white disabled:opacity-60"
+              className="min-h-12 w-full rounded-2xl bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white disabled:opacity-60"
               disabled={unreadCount === 0}
             >
               Mark all read
@@ -168,17 +173,17 @@ export default async function NotificationsPage({
 
                 return (
                   <article
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                     key={notification.id}
                   >
                     <div className="grid gap-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-xl font-semibold leading-snug">{notification.title}</h3>
-                        <span className="rounded-md border border-[var(--line)] px-2 py-1 text-base font-semibold text-[var(--muted)]">
+                        <span className="rounded-xl border border-[var(--line)] px-2 py-1 text-base font-semibold text-[var(--muted)]">
                           {eventLabel(notification.event_type)}
                         </span>
                         {!notification.read_at ? (
-                          <span className="rounded-md bg-[var(--accent)] px-2 py-1 text-base font-semibold text-white">
+                          <span className="rounded-xl bg-[var(--accent)] px-2 py-1 text-base font-semibold text-white">
                             New
                           </span>
                         ) : null}
@@ -198,14 +203,14 @@ export default async function NotificationsPage({
                       {canClaim ? (
                         <form action={claimNotificationChoreAction}>
                           <input name="notificationId" type="hidden" value={notification.id} />
-                          <button className="min-h-11 rounded-lg bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white">
+                          <button className="min-h-11 rounded-2xl bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white">
                             Claim
                           </button>
                         </form>
                       ) : null}
                       {approvalHref ? (
                         <Link
-                          className="min-h-11 rounded-lg bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white"
+                          className="min-h-11 rounded-2xl bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white"
                           href={approvalHref}
                         >
                           Open approval
@@ -213,7 +218,7 @@ export default async function NotificationsPage({
                       ) : null}
                       {kidChoreHref ? (
                         <Link
-                          className="min-h-11 rounded-lg bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white"
+                          className="min-h-11 rounded-2xl bg-[var(--accent)] px-4 py-2 text-base font-semibold text-white"
                           href={kidChoreHref}
                         >
                           Open chore
@@ -222,7 +227,7 @@ export default async function NotificationsPage({
                       {!notification.read_at ? (
                         <form action={markNotificationReadAction}>
                           <input name="notificationId" type="hidden" value={notification.id} />
-                          <button className="min-h-11 rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-base font-semibold text-[var(--accent-strong)]">
+                          <button className="min-h-11 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-2 text-base font-semibold text-[var(--accent-strong)]">
                             Mark read
                           </button>
                         </form>
@@ -233,12 +238,11 @@ export default async function NotificationsPage({
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               No notifications yet.
             </p>
           )}
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }

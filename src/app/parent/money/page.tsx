@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { closeOutPayoutAction, createManualAdjustmentAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -73,8 +74,7 @@ export default async function ParentMoneyPage({
 
   if (!household?.money_features_enabled) {
     return (
-      <main className="page-shell">
-        <div className="grid gap-8 py-6">
+      <AppShell variant="web">
           <header className="grid gap-4">
             <ParentNav />
             <div className="grid gap-2">
@@ -85,13 +85,12 @@ export default async function ParentMoneyPage({
             </div>
           </header>
           <Link
-            className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
+            className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
             href="/parent/household"
           >
             Open household settings
           </Link>
-        </div>
-      </main>
+      </AppShell>
     );
   }
 
@@ -201,8 +200,7 @@ export default async function ParentMoneyPage({
     });
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -215,13 +213,13 @@ export default async function ParentMoneyPage({
 
         <section aria-labelledby="balances-heading" className="grid gap-3">
           {params.adjusted ? (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
               Money adjustment added.
             </p>
           ) : null}
 
           {params.paid ? (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
               Payout marked paid.
             </p>
           ) : null}
@@ -233,7 +231,7 @@ export default async function ParentMoneyPage({
             <div className="grid gap-3 sm:grid-cols-2">
               {childProfileIds.map((childProfileId) => (
                 <article
-                  className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4"
+                  className="grid gap-1 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={childProfileId}
                 >
                   <h3 className="text-xl font-semibold leading-snug">
@@ -242,7 +240,7 @@ export default async function ParentMoneyPage({
                   <p className="text-3xl font-semibold">
                     {formatMoney(balancesByChildId.get(childProfileId) ?? 0)}
                   </p>
-                  <details className="mt-3 grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] p-3">
+                  <details className="mt-3 grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-3">
                     <summary className="cursor-pointer text-base font-semibold text-[var(--accent-strong)]">
                       Add adjustment
                     </summary>
@@ -252,7 +250,7 @@ export default async function ParentMoneyPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Direction
                         <select
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           name="direction"
                           required
                         >
@@ -263,7 +261,7 @@ export default async function ParentMoneyPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Amount
                         <input
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           inputMode="decimal"
                           min="0.01"
                           name="amountDollars"
@@ -276,7 +274,7 @@ export default async function ParentMoneyPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Effective date
                         <input
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           defaultValue={today}
                           name="effectiveOn"
                           required
@@ -286,7 +284,7 @@ export default async function ParentMoneyPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Note
                         <input
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           maxLength={500}
                           name="description"
                           placeholder="Allowance correction"
@@ -294,7 +292,7 @@ export default async function ParentMoneyPage({
                           type="text"
                         />
                       </label>
-                      <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                      <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
                         Save adjustment
                       </button>
                     </form>
@@ -303,7 +301,7 @@ export default async function ParentMoneyPage({
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               Add a child before money history can appear.
             </p>
           )}
@@ -320,7 +318,7 @@ export default async function ParentMoneyPage({
 
                 return (
                   <article
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                     key={`${row.childProfileId}:${row.payPeriodId}`}
                   >
                     <div className="grid gap-1">
@@ -341,13 +339,13 @@ export default async function ParentMoneyPage({
                       <label className="grid gap-2 text-base font-semibold">
                         Payout note
                         <input
-                          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                           maxLength={500}
                           name="note"
                           type="text"
                         />
                       </label>
-                      <button className="min-h-12 rounded-lg bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
+                      <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-4 py-3 text-lg font-semibold text-white">
                         Mark paid
                       </button>
                     </form>
@@ -356,7 +354,7 @@ export default async function ParentMoneyPage({
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               No approved payouts are ready.
             </p>
           )}
@@ -370,7 +368,7 @@ export default async function ParentMoneyPage({
             <div className="grid gap-3">
               {ledgerRows.map((ledger) => (
                 <article
-                  className="grid gap-1 rounded-lg border border-[var(--line)] bg-white p-4"
+                  className="grid gap-1 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={ledger.id}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -394,12 +392,11 @@ export default async function ParentMoneyPage({
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               No ledger activity yet.
             </p>
           )}
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }

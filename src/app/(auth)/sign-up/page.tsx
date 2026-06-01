@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { signUpAction } from "@/app/auth/actions";
 import { PasswordField } from "@/components/password-field";
+import { AppShell } from "@/components/ui";
 
 export default async function SignUpPage({
   searchParams,
@@ -10,11 +12,20 @@ export default async function SignUpPage({
   const params = await searchParams;
 
   return (
-    <main className="page-shell">
+    <AppShell className="max-w-3xl" variant="web">
       <section className="grid min-h-[calc(100dvh-2rem)] content-center gap-8 py-8">
         <header className="grid gap-2">
-          <Link className="text-base font-semibold text-[var(--accent-strong)]" href="/">
-            Chores
+          <Link className="flex w-fit items-center gap-3 text-lg font-semibold text-white" href="/">
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="h-12 w-12"
+              height={48}
+              priority
+              src="/brand/rhythm-icon.svg"
+              width={48}
+            />
+            Rhythm
           </Link>
           <h1 className="text-3xl font-semibold leading-tight">Create account</h1>
           <p className="max-w-xl text-lg text-[var(--muted)]">
@@ -23,7 +34,7 @@ export default async function SignUpPage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
@@ -33,7 +44,7 @@ export default async function SignUpPage({
             Name
             <input
               autoComplete="name"
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               name="displayName"
               required
               type="text"
@@ -44,7 +55,7 @@ export default async function SignUpPage({
             Email
             <input
               autoComplete="email"
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               name="email"
               required
               type="email"
@@ -60,17 +71,17 @@ export default async function SignUpPage({
 
           <fieldset className="grid gap-3">
             <legend className="text-lg font-semibold">Account type</legend>
-            <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-medium">
+            <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
               <input defaultChecked name="appRole" type="radio" value="parent" />
               Parent
             </label>
-            <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-medium">
+            <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
               <input name="appRole" type="radio" value="child" />
               Child
             </label>
           </fieldset>
 
-          <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+          <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
             Create account
           </button>
         </form>
@@ -82,6 +93,6 @@ export default async function SignUpPage({
           </Link>
         </p>
       </section>
-    </main>
+    </AppShell>
   );
 }

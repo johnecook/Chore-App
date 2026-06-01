@@ -1,6 +1,8 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createHouseholdAction, joinParentHouseholdAction } from "@/app/onboarding/actions";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AppShell } from "@/components/ui";
 import { currentUserHasHousehold, requireCurrentProfile } from "@/lib/auth/session";
 
 const weekdays = [
@@ -35,11 +37,22 @@ export default async function HouseholdOnboardingPage({
   }
 
   return (
-    <main className="page-shell">
+    <AppShell variant="web">
       <section className="grid min-h-[calc(100dvh-2rem)] content-center gap-8 py-8">
         <header className="grid gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-base font-semibold text-[var(--accent-strong)]">Chores</p>
+            <div className="flex items-center gap-3 text-lg font-semibold text-white">
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="h-12 w-12"
+                height={48}
+                priority
+                src="/brand/rhythm-icon.svg"
+                width={48}
+              />
+              Rhythm
+            </div>
             <SignOutButton />
           </div>
           <div className="grid gap-2">
@@ -51,7 +64,7 @@ export default async function HouseholdOnboardingPage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
@@ -67,7 +80,7 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Household name
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue="Cook Household"
               name="householdName"
               required
@@ -78,7 +91,7 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Timezone
             <select
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue="America/Chicago"
               name="householdTimezone"
             >
@@ -89,7 +102,7 @@ export default async function HouseholdOnboardingPage({
             </select>
           </label>
 
-          <fieldset className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
+          <fieldset className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
             <legend className="text-lg font-semibold">Money features</legend>
             <label className="flex items-start gap-3 text-lg font-semibold">
               <input
@@ -110,7 +123,7 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Payout schedule
             <select
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue="biweekly"
               name="payCycle"
             >
@@ -122,7 +135,7 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Payout day
             <select
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={5}
               name="payWeekday"
             >
@@ -137,13 +150,13 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             First payout date
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               name="biweeklyAnchorDate"
               type="date"
             />
           </label>
 
-          <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+          <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
             Create household
           </button>
         </form>
@@ -159,7 +172,7 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Invite code
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               name="invitationId"
               placeholder="Invite code"
               required
@@ -171,12 +184,12 @@ export default async function HouseholdOnboardingPage({
             Joining a household disconnects this parent account from any previous household.
           </p>
 
-          <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-lg font-semibold">
+          <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-5 py-3 text-lg font-semibold">
             Join household
           </button>
         </form>
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

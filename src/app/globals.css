@@ -1,16 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --background: #fbfaf7;
-  --foreground: #1f2520;
-  --muted: #5f685f;
-  --line: #d9ded7;
-  --surface: #ffffff;
-  --accent: #176b5b;
-  --accent-strong: #0f4f43;
-  --warning: #8b5d13;
-  --danger: #9f2f2f;
+  color-scheme: dark;
+  --background: #222a59;
+  --background-deep: #171f49;
+  --foreground: #ffffff;
+  --muted: #d6e3f4;
+  --subtle: #afc1da;
+  --line: rgba(174, 235, 242, 0.22);
+  --surface: #2c3673;
+  --surface-elevated: #2b3b78;
+  --surface-card: #102763;
+  --surface-soft: rgba(174, 235, 242, 0.08);
+  --accent: #0f5c8c;
+  --accent-strong: #aeebf2;
+  --highlight: #0d688c;
+  --warning: #ffe0a3;
+  --danger: #ffb4b4;
+  --success: #b8f3d4;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-card: 1.5rem;
+  --shadow-card: 0 18px 44px rgba(5, 12, 35, 0.26);
+  --shadow-raised: 0 24px 64px rgba(5, 12, 35, 0.34);
+  --touch-target: 3rem;
 }
 
 * {
@@ -20,19 +34,23 @@
 html {
   min-height: 100%;
   text-size-adjust: 100%;
+  background: var(--background);
 }
 
 body {
   min-height: 100%;
   margin: 0;
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(174, 235, 242, 0.14), transparent 34rem),
+    linear-gradient(180deg, var(--background) 0%, var(--background-deep) 100%);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
 
 a {
+  color: inherit;
   text-decoration: none;
 }
 
@@ -43,19 +61,75 @@ textarea {
   font: inherit;
 }
 
+select,
+input,
+textarea {
+  color: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--line);
+}
+
 :focus-visible {
-  outline: 3px solid #1f7a68;
+  outline: 3px solid var(--accent-strong);
   outline-offset: 3px;
 }
 
 .page-shell {
-  width: min(100%, 72rem);
+  width: 100%;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0 1rem calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+.rhythm-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(174, 235, 242, 0.12), transparent 12rem),
+    linear-gradient(145deg, rgba(43, 59, 120, 0.98), rgba(15, 39, 99, 0.98));
+  box-shadow: var(--shadow-card);
+}
+
+.rhythm-panel {
+  border: 1px solid rgba(174, 235, 242, 0.13);
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(174, 235, 242, 0.12), transparent 11rem),
+    linear-gradient(180deg, #061842 0%, #081d4c 52%, #06163a 100%);
+  box-shadow: 0 28px 70px rgba(1, 6, 22, 0.4);
+}
+
+.rhythm-row {
+  border-bottom: 1px solid rgba(174, 235, 242, 0.12);
+}
+
+.rhythm-row:last-child {
+  border-bottom: 0;
+}
+
+.rhythm-control {
+  min-height: var(--touch-target);
+  border-radius: var(--radius-md);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.break-anywhere {
+  overflow-wrap: anywhere;
 }
 
 @media (min-width: 48rem) {
   .page-shell {
-    padding: 2rem;
+    padding: 0 1rem calc(6rem + env(safe-area-inset-bottom));
   }
 }

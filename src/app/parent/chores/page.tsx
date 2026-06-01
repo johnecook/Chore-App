@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { deactivateTemplateAction, reactivateTemplateAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -197,8 +198,7 @@ export default async function ParentChoresPage({
   }
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-3">
@@ -210,7 +210,7 @@ export default async function ParentChoresPage({
                 </p>
               </div>
               <Link
-                className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
+                className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
                 href="/parent/chores/new"
               >
                 Add chore
@@ -220,31 +220,31 @@ export default async function ParentChoresPage({
         </header>
 
         {params.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {params.error}
           </p>
         ) : null}
 
         {params.createdChore ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Chore created.
           </p>
         ) : null}
 
         {params.updatedTemplate ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Chore template updated.
           </p>
         ) : null}
 
         {params.deactivatedTemplate ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Chore template deactivated.
           </p>
         ) : null}
 
         {params.reactivatedTemplate ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Chore template reactivated.
           </p>
         ) : null}
@@ -275,13 +275,12 @@ export default async function ParentChoresPage({
               ) : null}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               No chore templates yet.
             </p>
           )}
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }
 
@@ -322,14 +321,14 @@ function TemplateGroup({
 
           return (
             <article
-              className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-start"
+              className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 sm:grid-cols-[1fr_auto] sm:items-start"
               key={template.id}
             >
               <div className="grid gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h4 className="text-xl font-semibold leading-snug">{template.title}</h4>
                   {inactive ? (
-                    <span className="rounded-md border border-[var(--line)] px-2 py-1 text-sm font-semibold text-[var(--muted)]">
+                    <span className="rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold text-[var(--muted)]">
                       Inactive
                     </span>
                   ) : null}
@@ -337,7 +336,7 @@ function TemplateGroup({
                 <div className="flex flex-wrap gap-2">
                   {detailItems.map((item) => (
                     <span
-                      className="rounded-md border border-[var(--line)] px-2 py-1 text-sm font-medium text-[var(--muted)]"
+                      className="rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-medium text-[var(--muted)]"
                       key={item}
                     >
                       {item}
@@ -349,7 +348,7 @@ function TemplateGroup({
                 {template.active ? (
                   <>
                     <Link
-                      className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold"
+                      className="inline-flex min-h-10 items-center rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-base font-semibold"
                       href={`/parent/chores/${template.id}/edit`}
                     >
                       Edit
@@ -357,7 +356,7 @@ function TemplateGroup({
                     <form action={deactivateTemplateAction}>
                       <input name="templateId" type="hidden" value={template.id} />
                       <input name="redirectTo" type="hidden" value="chores" />
-                      <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--danger)]">
+                      <button className="min-h-10 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-base font-semibold text-[var(--danger)]">
                         Deactivate
                       </button>
                     </form>
@@ -365,7 +364,7 @@ function TemplateGroup({
                 ) : (
                   <form action={reactivateTemplateAction}>
                     <input name="templateId" type="hidden" value={template.id} />
-                    <button className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
+                    <button className="min-h-10 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-base font-semibold text-[var(--accent-strong)]">
                       Reactivate
                     </button>
                   </form>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { reopenChoreAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -231,8 +232,7 @@ export default async function ParentHistoryPage({
       : historyInstances ?? [];
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -246,10 +246,10 @@ export default async function ParentHistoryPage({
         <nav aria-label="History filters" className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           {historyFilters.map((filter) => (
             <Link
-              className={`rounded-lg border px-3 py-2 text-center text-base font-semibold ${
+              className={`rounded-2xl border px-3 py-2 text-center text-base font-semibold ${
                 activeStatus === filter.status
                   ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                  : "border-[var(--line)] bg-white text-[var(--foreground)]"
+                  : "border-[var(--line)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
               }`}
               href={filter.status === "all" ? "/parent/history" : `/parent/history?status=${filter.status}`}
               key={filter.status}
@@ -272,7 +272,7 @@ export default async function ParentHistoryPage({
 
                 return (
                   <article
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4"
+                    className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                     key={instance.id}
                   >
                     <div className="grid gap-1">
@@ -280,7 +280,7 @@ export default async function ParentHistoryPage({
                         <h3 className="text-xl font-semibold leading-snug">
                           {templateTitleById.get(instance.template_id) ?? "Chore"}
                         </h3>
-                        <span className="rounded-md border border-[var(--line)] px-2 py-1 text-base font-semibold text-[var(--muted)]">
+                        <span className="rounded-xl border border-[var(--line)] px-2 py-1 text-base font-semibold text-[var(--muted)]">
                           {statusLabel(instance.status, paid)}
                         </span>
                       </div>
@@ -305,13 +305,13 @@ export default async function ParentHistoryPage({
                         <label className="grid gap-2 text-base font-semibold">
                           Reopen note
                           <input
-                            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                             maxLength={500}
                             name="feedback"
                             type="text"
                           />
                         </label>
-                        <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                        <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
                           Reopen
                         </button>
                       </form>
@@ -321,12 +321,11 @@ export default async function ParentHistoryPage({
               })}
             </div>
           ) : (
-            <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
               No chores match this filter.
             </p>
           )}
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }

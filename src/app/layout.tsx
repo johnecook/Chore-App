@@ -3,19 +3,19 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Chore App",
-  description: "Mobile-first chores and family responsibility tracking.",
+  title: "Rhythm",
+  description: "Mobile-first family responsibility and money tracking.",
   appleWebApp: {
     capable: true,
-    title: "Chores",
-    statusBarStyle: "default",
+    title: "Rhythm",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fbfaf7",
+  themeColor: "#222A59",
 };
 
 export default function RootLayout({

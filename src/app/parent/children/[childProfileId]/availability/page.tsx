@@ -6,6 +6,7 @@ import {
   saveAvailabilityWindowAction,
 } from "@/app/parent/children/[childProfileId]/availability/actions";
 import { ParentNav } from "@/components/parent-nav";
+import { AppShell } from "@/components/ui";
 import { requireCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -101,8 +102,7 @@ export default async function ChildAvailabilityPage({
   const childName = childUser?.display_name ?? "Child";
 
   return (
-    <main className="page-shell">
-      <div className="grid gap-8 py-6">
+    <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
@@ -114,13 +114,13 @@ export default async function ChildAvailabilityPage({
         </header>
 
         {query.error ? (
-          <p className="rounded-lg border border-[var(--danger)] bg-white p-4 text-lg font-medium text-[var(--danger)]">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             {query.error}
           </p>
         ) : null}
 
         {query.saved ? (
-          <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg font-medium">
+          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
             Availability updated.
           </p>
         ) : null}
@@ -139,7 +139,7 @@ export default async function ChildAvailabilityPage({
             <label className="grid gap-2 text-lg font-semibold">
               Anchor date
               <input
-                className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                 defaultValue={availabilityWindow?.anchor_date ?? new Date().toISOString().slice(0, 10)}
                 name="anchorDate"
                 required
@@ -149,15 +149,15 @@ export default async function ChildAvailabilityPage({
 
             <fieldset className="grid gap-3">
               <legend className="text-lg font-semibold">Pattern</legend>
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-medium">
+              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
                 <input defaultChecked={!availabilityWindow} name="pattern" type="radio" value="week_on_week_off" />
                 Week on, week off
               </label>
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-medium">
+              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
                 <input name="pattern" type="radio" value="every_day" />
                 Every day
               </label>
-              <label className="grid gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-medium">
+              <label className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
                 <span className="flex items-center gap-3">
                   <input name="pattern" type="radio" value="custom" />
                   Custom 14-day cycle
@@ -179,7 +179,7 @@ export default async function ChildAvailabilityPage({
               </label>
             </fieldset>
 
-            <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+            <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
               Save pattern
             </button>
           </form>
@@ -198,7 +198,7 @@ export default async function ChildAvailabilityPage({
             <label className="grid gap-2 text-lg font-semibold">
               Date
               <input
-                className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                 name="overrideDate"
                 required
                 type="date"
@@ -207,7 +207,7 @@ export default async function ChildAvailabilityPage({
             <label className="grid gap-2 text-lg font-semibold">
               Availability
               <select
-                className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                 name="available"
               >
                 <option value="true">Available</option>
@@ -217,12 +217,12 @@ export default async function ChildAvailabilityPage({
             <label className="grid gap-2 text-lg font-semibold">
               Reason
               <input
-                className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                 name="reason"
                 type="text"
               />
             </label>
-            <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+            <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
               Add override
             </button>
           </form>
@@ -230,7 +230,7 @@ export default async function ChildAvailabilityPage({
           <div className="grid gap-3">
             {overrides?.length ? (
               overrides.map((override) => (
-                <article className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4" key={override.id}>
+                <article className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4" key={override.id}>
                   <div className="grid gap-1">
                     <h3 className="text-xl font-semibold leading-snug">{override.override_date}</h3>
                     <p className="text-base text-[var(--muted)]">
@@ -241,20 +241,19 @@ export default async function ChildAvailabilityPage({
                   <form action={deleteAvailabilityOverrideAction}>
                     <input name="childProfileId" type="hidden" value={childProfile.id} />
                     <input name="overrideId" type="hidden" value={override.id} />
-                    <button className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold">
+                    <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold">
                       Delete
                     </button>
                   </form>
                 </article>
               ))
             ) : (
-              <p className="rounded-lg border border-[var(--line)] bg-white p-4 text-lg text-[var(--muted)]">
+              <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
                 No overrides yet.
               </p>
             )}
           </div>
         </section>
-      </div>
-    </main>
+    </AppShell>
   );
 }

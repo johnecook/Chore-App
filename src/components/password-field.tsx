@@ -19,7 +19,7 @@ export function PasswordField({ autoComplete, label, minLength, name }: Password
       <div className="grid gap-2 sm:flex sm:items-stretch">
         <input
           autoComplete={autoComplete}
-          className="min-h-12 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+          className="min-h-12 min-w-0 flex-1 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
           id={inputId}
           minLength={minLength}
           name={name}
@@ -29,7 +29,7 @@ export function PasswordField({ autoComplete, label, minLength, name }: Password
         <button
           aria-controls={inputId}
           aria-pressed={isVisible}
-          className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]"
+          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]"
           onClick={() => setIsVisible((current) => !current)}
           type="button"
         >

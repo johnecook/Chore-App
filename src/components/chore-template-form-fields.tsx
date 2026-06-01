@@ -72,12 +72,12 @@ export function ChoreTemplateFormFields({
 
   return (
     <>
-      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <h2 className="text-xl font-semibold">Basics</h2>
         <label className="grid gap-2 text-lg font-semibold">
           Title
           <input
-            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             defaultValue={defaults.title ?? ""}
             maxLength={120}
             name="title"
@@ -88,7 +88,7 @@ export function ChoreTemplateFormFields({
         <label className="grid gap-2 text-lg font-semibold">
           Description
           <textarea
-            className="min-h-28 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-28 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             defaultValue={defaults.description ?? ""}
             maxLength={500}
             name="description"
@@ -96,12 +96,12 @@ export function ChoreTemplateFormFields({
         </label>
       </section>
 
-      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <h2 className="text-xl font-semibold">Schedule</h2>
         <label className="grid gap-2 text-lg font-semibold">
           Type
           <select
-            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             name="scheduleType"
             onChange={(event) => setScheduleType(event.target.value as ScheduleType)}
             value={scheduleType}
@@ -115,7 +115,7 @@ export function ChoreTemplateFormFields({
         <label className="grid gap-2 text-lg font-semibold">
           Start date
           <input
-            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             defaultValue={defaults.startDate}
             name="startDate"
             required
@@ -126,7 +126,7 @@ export function ChoreTemplateFormFields({
           <label className="grid gap-2 text-lg font-semibold">
             Date
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={defaults.oneOffDate ?? defaults.startDate}
               name="oneOffDate"
               required
@@ -140,7 +140,7 @@ export function ChoreTemplateFormFields({
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {weekdays.map(([value, label]) => (
                 <label
-                  className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
+                  className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
                   key={value}
                 >
                   <input
@@ -160,7 +160,7 @@ export function ChoreTemplateFormFields({
           <label className="grid gap-2 text-lg font-semibold">
             Interval days
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={defaults.intervalDays ?? ""}
               min={1}
               name="intervalDays"
@@ -174,7 +174,7 @@ export function ChoreTemplateFormFields({
           <label className="grid gap-2 text-lg font-semibold">
             Due after
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={defaults.dueTimeStart ?? ""}
               name="dueTimeStart"
               type="time"
@@ -183,7 +183,7 @@ export function ChoreTemplateFormFields({
           <label className="grid gap-2 text-lg font-semibold">
             Due before
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={defaults.dueTimeEnd ?? ""}
               name="dueTimeEnd"
               type="time"
@@ -192,7 +192,7 @@ export function ChoreTemplateFormFields({
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <h2 className="text-xl font-semibold">Value</h2>
         {!moneyFeaturesEnabled ? (
           <p className="text-base text-[var(--muted)]">
@@ -202,7 +202,7 @@ export function ChoreTemplateFormFields({
         <label className="grid gap-2 text-lg font-semibold">
           Model
           <select
-            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             name="valueModel"
             onChange={(event) => setValueModel(event.target.value as ValueModel)}
             value={valueModel}
@@ -216,7 +216,7 @@ export function ChoreTemplateFormFields({
           <label className="grid gap-2 text-lg font-semibold">
             Amount
             <input
-              className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
               defaultValue={defaults.amountDollars ?? ""}
               min="0"
               name="amountDollars"
@@ -229,12 +229,12 @@ export function ChoreTemplateFormFields({
         ) : null}
       </section>
 
-      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <h2 className="text-xl font-semibold">Assignment</h2>
         <label className="grid gap-2 text-lg font-semibold">
           Mode
           <select
-            className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
             name="assignmentMode"
             onChange={(event) => setAssignmentMode(event.target.value as AssignmentMode)}
             value={assignmentMode}
@@ -250,7 +250,7 @@ export function ChoreTemplateFormFields({
             <div className="grid gap-2">
               {children.map((child) => (
                 <label
-                  className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
+                  className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-lg font-medium"
                   key={child.id}
                 >
                   <input
@@ -268,11 +268,11 @@ export function ChoreTemplateFormFields({
         ) : null}
       </section>
 
-      <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Checklist</h2>
           <button
-            className="min-h-10 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-base font-semibold text-[var(--accent-strong)]"
+            className="min-h-10 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-base font-semibold text-[var(--accent-strong)]"
             disabled={checklistItems.length >= 20}
             onClick={() => setChecklistItems((items) => [...items, ""])}
             type="button"
@@ -286,7 +286,7 @@ export function ChoreTemplateFormFields({
               <label className="grid gap-2 text-lg font-semibold">
                 Item {index + 1}
                 <input
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-lg"
+                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
                   maxLength={120}
                   name="checklistItems"
                   onChange={(event) => {
@@ -304,7 +304,7 @@ export function ChoreTemplateFormFields({
               </label>
               {checklistItems.length > 1 ? (
                 <button
-                  className="min-h-12 self-end rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-base font-semibold text-[var(--danger)]"
+                  className="min-h-12 self-end rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-base font-semibold text-[var(--danger)]"
                   onClick={() =>
                     setChecklistItems((items) => items.filter((_, currentIndex) => currentIndex !== index))
                   }
@@ -318,7 +318,7 @@ export function ChoreTemplateFormFields({
         </div>
       </section>
 
-      <section className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4">
+      <section className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
         <h2 className="text-xl font-semibold">Proof</h2>
         <label className="flex min-h-12 items-center gap-3 text-lg font-semibold">
           <input
@@ -341,12 +341,12 @@ export function ChoreTemplateFormFields({
       </section>
 
       <div className="flex flex-wrap gap-3">
-        <button className="min-h-12 rounded-lg bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+        <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
           {submitLabel}
         </button>
         {cancelHref ? (
           <a
-            className="inline-flex min-h-12 items-center rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-lg font-semibold"
+            className="inline-flex min-h-12 items-center rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-5 py-3 text-lg font-semibold"
             href={cancelHref}
           >
             Cancel
