@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AppShell, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
 
 export function AuthFrame({
   children,
@@ -15,8 +15,8 @@ export function AuthFrame({
   title: ReactNode;
 }) {
   return (
-    <AppShell className="max-w-5xl" variant="web">
-      <section className="grid min-h-dvh content-start gap-6 py-5 sm:gap-8 sm:py-8">
+    <main className="page-shell max-w-5xl">
+      <section className="grid min-h-dvh content-start gap-5 py-2 sm:gap-6 sm:py-3">
         <header className="rhythm-card grid gap-5 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:p-7">
           <Link
             aria-label="Rhythm home"
@@ -55,6 +55,6 @@ export function AuthFrame({
           </Card>
         </div>
       </section>
-    </AppShell>
+    </main>
   );
 }

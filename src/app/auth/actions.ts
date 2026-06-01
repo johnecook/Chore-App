@@ -68,7 +68,7 @@ export async function signUpAction(formData: FormData) {
     authErrorRedirect("/sign-up", error.message);
   }
 
-  redirect("/start");
+  redirect(`/check-email?email=${encodeURIComponent(parsed.data.email)}`);
 }
 
 export async function signOutAction() {
