@@ -32,10 +32,6 @@ const createHouseholdSchema = z.object({
   },
 );
 
-const joinHouseholdSchema = z.object({
-  invitationId: z.uuid(),
-});
-
 function onboardingError(message: string): never {
   redirect(`/onboarding/household?error=${encodeURIComponent(message)}`);
 }
@@ -68,26 +64,5 @@ export async function createHouseholdAction(formData: FormData) {
     onboardingError(error.message);
   }
 
-  redirect("/parent");
-}
-
-export async function joinParentHouseholdAction(formData: FormData) {
-  const parsed = joinHouseholdSchema.safeParse({
-    invitationId: formData.get("invitationId"),
-  });
-
-  if (!parsed.success) {
-    onboardingError("Enter a valid household invite code.");
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("accept_parent_invitation", {
-    target_invitation_id: parsed.data.invitationId,
-  });
-
-  if (error) {
-    onboardingError(error.message);
-  }
-
-  redirect("/parent");
+  redirect("/parent/household?created=1");
 }

@@ -43,3 +43,21 @@ begin
     raise exception 'Expected child profile bootstrap';
   end if;
 end $$;
+
+set local role authenticated;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000101', true);
+
+do $$
+declare
+  visible_profile_count int;
+begin
+  select count(*)
+  into visible_profile_count
+  from public.profiles
+  where id = '00000000-0000-4000-8000-000000000101';
+
+  if visible_profile_count <> 1 then
+    raise exception 'Expected authenticated parent to read own profile';
+  end if;
+end $$;

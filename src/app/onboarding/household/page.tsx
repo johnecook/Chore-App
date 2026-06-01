@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { createHouseholdAction, joinParentHouseholdAction } from "@/app/onboarding/actions";
+import { createHouseholdAction } from "@/app/onboarding/actions";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AppShell } from "@/components/ui";
 import { currentUserHasHousehold, requireCurrentProfile } from "@/lib/auth/session";
@@ -69,14 +69,14 @@ export default async function HouseholdOnboardingPage({
           </p>
         ) : null}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,28rem)_minmax(0,28rem)]">
-        <form action={createHouseholdAction} className="grid gap-4">
+        <form action={createHouseholdAction} className="grid max-w-xl gap-4">
           <div className="grid gap-1">
             <h2 className="text-xl font-semibold">Create a household</h2>
             <p className="text-base text-[var(--muted)]">
-              Use this if you are setting up chores for your household.
+              Use this if you are setting up chores, routines, and optional payouts for your household.
             </p>
           </div>
+
           <label className="grid gap-2 text-lg font-semibold">
             Household name
             <input
@@ -160,35 +160,6 @@ export default async function HouseholdOnboardingPage({
             Create household
           </button>
         </form>
-
-        <form action={joinParentHouseholdAction} className="grid content-start gap-4">
-          <div className="grid gap-1">
-            <h2 className="text-xl font-semibold">Join a household</h2>
-            <p className="text-base text-[var(--muted)]">
-              Use an invite link or paste the invite code from another parent.
-            </p>
-          </div>
-
-          <label className="grid gap-2 text-lg font-semibold">
-            Invite code
-            <input
-              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-              name="invitationId"
-              placeholder="Invite code"
-              required
-              type="text"
-            />
-          </label>
-
-          <p className="text-base text-[var(--muted)]">
-            Joining a household disconnects this parent account from any previous household.
-          </p>
-
-          <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-5 py-3 text-lg font-semibold">
-            Join household
-          </button>
-        </form>
-        </div>
       </section>
     </AppShell>
   );

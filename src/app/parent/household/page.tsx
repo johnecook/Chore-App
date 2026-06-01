@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   createChildInviteAction,
@@ -6,6 +7,7 @@ import {
   updateParentRoleAction,
   updateHouseholdAction,
 } from "@/app/parent/household/actions";
+import { InviteLinkActions } from "@/app/parent/household/invite-link-actions";
 import { ParentNav } from "@/components/parent-nav";
 import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
@@ -23,7 +25,7 @@ const timezones = [
 export default async function ParentHouseholdPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; invited?: string; saved?: string }>;
+  searchParams: Promise<{ created?: string; error?: string; invited?: string; saved?: string }>;
 }) {
   const [profile, householdId, params] = await Promise.all([
     requireCurrentProfile(),
@@ -40,6 +42,11 @@ export default async function ParentHouseholdPage({
   }
 
   const supabase = await createSupabaseServerClient();
+  const requestHeaders = await headers();
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const inviteBaseUrl = host ? `${protocol}://${host}` : "";
+
   const { data: household, error: householdError } = await supabase
     .from("households")
     .select("id, name, timezone, money_features_enabled")
@@ -107,6 +114,9 @@ export default async function ParentHouseholdPage({
   const parents = memberships?.filter((membership) => membership.role !== "child") ?? [];
   const children = memberships?.filter((membership) => membership.role === "child") ?? [];
   const pendingInvites = invitations?.filter((invite) => !invite.accepted_at && !invite.revoked_at) ?? [];
+  const createdInvite = params.invited
+    ? pendingInvites.find((invite) => invite.id === params.invited)
+    : undefined;
 
   return (
     <AppShell variant="web">
@@ -132,13 +142,106 @@ export default async function ParentHouseholdPage({
           </p>
         ) : null}
 
-        {params.invited ? (
+        {params.created ? (
           <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
-            Invite created. Link:{" "}
-            <span className="break-all font-semibold text-[var(--accent-strong)]">
-              /invite/{params.invited}
-            </span>
+            Household created. Create invite codes for the people who should join next.
           </p>
+        ) : null}
+
+        {params.invited ? (
+          <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg font-medium">
+            <p>
+              Invite created. Link:{" "}
+              <span className="break-all font-semibold text-[var(--accent-strong)]">
+                {inviteBaseUrl}/invite/{params.invited}
+              </span>
+            </p>
+            {createdInvite ? (
+              <InviteLinkActions
+                email={createdInvite.email}
+                inviteUrl={`${inviteBaseUrl}/invite/${createdInvite.id}`}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
+        {canManageHousehold ? (
+          <section aria-labelledby="create-invite-heading" className="grid gap-3">
+            <div className="grid gap-1">
+              <h2 id="create-invite-heading" className="text-xl font-semibold">
+                Create invite code
+              </h2>
+              <p className="max-w-2xl text-base text-[var(--muted)]">
+                Create a household invite link, then copy it or open a prefilled email.
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <form
+                action={createChildInviteAction}
+                className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+              >
+                <div className="grid gap-1">
+                  <h3 className="text-xl font-semibold">Child invite</h3>
+                  <p className="text-base text-[var(--muted)]">
+                    They sign in with their own child account and accept the invite.
+                  </p>
+                </div>
+
+                <label className="grid gap-2 text-lg font-semibold">
+                  Child name
+                  <input
+                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                    name="childName"
+                    required
+                    type="text"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-lg font-semibold">
+                  Child email
+                  <input
+                    autoComplete="email"
+                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                    name="childEmail"
+                    required
+                    type="email"
+                  />
+                </label>
+
+                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+                  Create invite code
+                </button>
+              </form>
+
+              <form
+                action={createParentInviteAction}
+                className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+              >
+                <div className="grid gap-1">
+                  <h3 className="text-xl font-semibold">Parent invite</h3>
+                  <p className="text-base text-[var(--muted)]">
+                    Parent accounts belong to one household at a time.
+                  </p>
+                </div>
+
+                <label className="grid gap-2 text-lg font-semibold">
+                  Parent email
+                  <input
+                    autoComplete="email"
+                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                    name="parentEmail"
+                    required
+                    type="email"
+                  />
+                </label>
+
+                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+                  Create invite code
+                </button>
+              </form>
+            </div>
+          </section>
         ) : null}
 
         <section aria-labelledby="household-details-heading" className="grid gap-3">
@@ -300,79 +403,16 @@ export default async function ParentHouseholdPage({
                     className="break-all text-base font-semibold text-[var(--accent-strong)]"
                     href={`/invite/${invite.id}`}
                   >
-                    /invite/{invite.id}
+                    {inviteBaseUrl}/invite/{invite.id}
                   </Link>
+                  <InviteLinkActions
+                    email={invite.email}
+                    inviteUrl={`${inviteBaseUrl}/invite/${invite.id}`}
+                  />
                 </article>
               ))}
             </div>
           </section>
-        ) : null}
-
-        {canManageHousehold ? (
-          <details className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4" open={!children.length}>
-            <summary className="cursor-pointer text-xl font-semibold">
-              Invite a child
-            </summary>
-            <form action={createChildInviteAction} className="mt-4 grid max-w-md gap-4">
-              <p className="text-base text-[var(--muted)]">
-                They sign in with their own account and accept the invite.
-              </p>
-
-              <label className="grid gap-2 text-lg font-semibold">
-                Child name
-                <input
-                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                  name="childName"
-                  required
-                  type="text"
-                />
-              </label>
-
-              <label className="grid gap-2 text-lg font-semibold">
-                Child email
-                <input
-                  autoComplete="email"
-                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                  name="childEmail"
-                  required
-                  type="email"
-                />
-              </label>
-
-              <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                Create invite
-              </button>
-            </form>
-          </details>
-        ) : null}
-
-        {canManageHousehold ? (
-          <details className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
-            <summary className="cursor-pointer text-xl font-semibold">
-              Invite a parent
-            </summary>
-            <form action={createParentInviteAction} className="mt-4 grid max-w-md gap-4">
-              <p className="text-base text-[var(--muted)]">
-                Parent accounts belong to one household at a time. Accepting this invite disconnects
-                the parent from any previous household.
-              </p>
-
-              <label className="grid gap-2 text-lg font-semibold">
-                Parent email
-                <input
-                  autoComplete="email"
-                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                  name="parentEmail"
-                  required
-                  type="email"
-                />
-              </label>
-
-              <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                Create invite
-              </button>
-            </form>
-          </details>
         ) : null}
 
         <section aria-labelledby="invite-history-heading" className="grid gap-3">
@@ -401,12 +441,18 @@ export default async function ParentHouseholdPage({
                         : "Waiting"}
                   </p>
                   {!invite.accepted_at && !invite.revoked_at ? (
-                    <Link
-                      className="break-all text-base font-semibold text-[var(--accent-strong)]"
-                      href={`/invite/${invite.id}`}
-                    >
-                      /invite/{invite.id}
-                    </Link>
+                    <>
+                      <Link
+                        className="break-all text-base font-semibold text-[var(--accent-strong)]"
+                        href={`/invite/${invite.id}`}
+                      >
+                        {inviteBaseUrl}/invite/{invite.id}
+                      </Link>
+                      <InviteLinkActions
+                        email={invite.email}
+                        inviteUrl={`${inviteBaseUrl}/invite/${invite.id}`}
+                      />
+                    </>
                   ) : null}
                 </article>
               ))
