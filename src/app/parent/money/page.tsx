@@ -20,6 +20,8 @@ function formatMoney(cents: number) {
 
 function transactionLabel(type: LedgerType) {
   switch (type) {
+    case "allowance_credit":
+      return "Base allowance";
     case "approved_credit":
       return "Approved chore";
     case "manual_adjustment":
@@ -94,6 +96,15 @@ export default async function ParentMoneyPage({
     );
   }
 
+  const { error: allowanceError } = await supabase.rpc("ensure_current_allowance_credits", {
+    target_household_id: householdId,
+    target_date: today,
+  });
+
+  if (allowanceError) {
+    throw new Error(allowanceError.message);
+  }
+
   const { data: childMemberships, error: membershipError } = await supabase
     .from("household_memberships")
     .select("user_id")
@@ -136,7 +147,7 @@ export default async function ParentMoneyPage({
         )
         .eq("payout_household_id", householdId)
         .in("child_profile_id", childProfileIds)
-        .in("transaction_type", ["approved_credit", "manual_adjustment", "payout"])
+        .in("transaction_type", ["allowance_credit", "approved_credit", "manual_adjustment", "payout"])
         .order("created_at", { ascending: false })
         .limit(100)
     : { data: [], error: null };
@@ -180,16 +191,34 @@ export default async function ParentMoneyPage({
 
       const key = `${ledger.child_profile_id}:${ledger.pay_period_id}`;
       const existing = rows.get(key) ?? {
+        adjustmentCents: 0,
+        allowanceCents: 0,
         amountCents: 0,
         childProfileId: ledger.child_profile_id,
+        choreCents: 0,
         payPeriodId: ledger.pay_period_id,
       };
+      const allowanceCents =
+        ledger.transaction_type === "allowance_credit"
+          ? existing.allowanceCents + ledger.amount_cents
+          : existing.allowanceCents;
+      const choreCents =
+        ledger.transaction_type === "approved_credit"
+          ? existing.choreCents + ledger.amount_cents
+          : existing.choreCents;
+      const adjustmentCents =
+        ledger.transaction_type === "manual_adjustment"
+          ? existing.adjustmentCents + ledger.amount_cents
+          : existing.adjustmentCents;
       rows.set(key, {
         ...existing,
+        adjustmentCents,
+        allowanceCents,
         amountCents: existing.amountCents + ledger.amount_cents,
+        choreCents,
       });
       return rows;
-    }, new Map<string, { amountCents: number; childProfileId: string; payPeriodId: string }>()),
+    }, new Map<string, { adjustmentCents: number; allowanceCents: number; amountCents: number; childProfileId: string; choreCents: number; payPeriodId: string }>()),
   )
     .map(([, row]) => row)
     .filter((row) => row.amountCents > 0)
@@ -331,6 +360,15 @@ export default async function ParentMoneyPage({
                           {formatDate(period.start_date)} through {formatDate(period.end_date)}
                         </p>
                       ) : null}
+                      <div className="mt-2 grid gap-1 text-base text-[var(--muted)]">
+                        {row.allowanceCents > 0 ? (
+                          <p>Base allowance: {formatMoney(row.allowanceCents)}</p>
+                        ) : null}
+                        {row.choreCents > 0 ? <p>Extra chores: {formatMoney(row.choreCents)}</p> : null}
+                        {row.adjustmentCents !== 0 ? (
+                          <p>Adjustments: {formatMoney(row.adjustmentCents)}</p>
+                        ) : null}
+                      </div>
                     </div>
                     <form action={closeOutPayoutAction} className="grid gap-3">
                       <input name="childProfileId" type="hidden" value={row.childProfileId} />

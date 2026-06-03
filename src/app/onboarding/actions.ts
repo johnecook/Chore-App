@@ -7,25 +7,25 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const createHouseholdSchema = z.object({
   householdName: z.string().trim().min(1).max(80),
   householdTimezone: z.string().trim().min(1).max(80),
-  moneyFeaturesEnabled: z.boolean(),
+  moneyMode: z.enum(["none", "per_chore", "allowance_plus_bonus"]),
   payCycle: z.enum(["weekly", "biweekly"]).optional(),
   payWeekday: z.coerce.number().int().min(0).max(6).optional(),
   biweeklyAnchorDate: z.iso.date().optional(),
 }).refine(
-  (value) => !value.moneyFeaturesEnabled || value.payCycle,
+  (value) => value.moneyMode === "none" || value.payCycle,
   {
     message: "Choose a payout schedule or turn money features off.",
     path: ["payCycle"],
   },
 ).refine(
-  (value) => !value.moneyFeaturesEnabled || value.payWeekday !== undefined,
+  (value) => value.moneyMode === "none" || value.payWeekday !== undefined,
   {
     message: "Choose a payout day or turn money features off.",
     path: ["payWeekday"],
   },
 ).refine(
   (value) =>
-    !value.moneyFeaturesEnabled || value.payCycle === "weekly" || value.biweeklyAnchorDate,
+    value.moneyMode === "none" || value.payCycle === "weekly" || value.biweeklyAnchorDate,
   {
     message: "Choose the first payout date for an every-two-weeks schedule.",
     path: ["biweeklyAnchorDate"],
@@ -40,7 +40,7 @@ export async function createHouseholdAction(formData: FormData) {
   const parsed = createHouseholdSchema.safeParse({
     householdName: formData.get("householdName"),
     householdTimezone: formData.get("householdTimezone"),
-    moneyFeaturesEnabled: formData.get("moneyFeaturesEnabled") === "on",
+    moneyMode: formData.get("moneyMode"),
     payCycle: formData.get("payCycle"),
     payWeekday: formData.get("payWeekday"),
     biweeklyAnchorDate: formData.get("biweeklyAnchorDate") || undefined,
@@ -51,10 +51,12 @@ export async function createHouseholdAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
+  const moneyFeaturesEnabled = parsed.data.moneyMode !== "none";
   const { error } = await supabase.rpc("create_parent_household", {
     household_name: parsed.data.householdName,
     household_timezone: parsed.data.householdTimezone,
-    money_features_enabled: parsed.data.moneyFeaturesEnabled,
+    money_features_enabled: moneyFeaturesEnabled,
+    household_money_mode: parsed.data.moneyMode,
     pay_weekday: parsed.data.payWeekday ?? null,
     pay_cycle: parsed.data.payCycle ?? null,
     biweekly_anchor_date: parsed.data.payCycle === "biweekly" ? parsed.data.biweeklyAnchorDate : null,

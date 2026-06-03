@@ -17,6 +17,8 @@ type LedgerType = Database["public"]["Enums"]["ledger_transaction_type"];
 
 function transactionLabel(type: LedgerType) {
   switch (type) {
+    case "allowance_credit":
+      return "Base allowance";
     case "approved_credit":
       return "Chore approved";
     case "manual_adjustment":
@@ -67,7 +69,7 @@ export default async function KidMoneyPage() {
     .from("ledger_transactions")
     .select("id, transaction_type, amount_cents, description, effective_date, created_at")
     .eq("child_profile_id", childProfile.id)
-    .in("transaction_type", ["approved_credit", "manual_adjustment", "payout"])
+    .in("transaction_type", ["allowance_credit", "approved_credit", "manual_adjustment", "payout"])
     .order("created_at", { ascending: false })
     .limit(100);
 

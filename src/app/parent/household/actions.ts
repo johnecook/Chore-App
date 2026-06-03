@@ -24,8 +24,25 @@ const updateParentRoleSchema = z.object({
   role: z.enum(["admin", "parent"]),
 });
 
+const updateChildAllowanceSchema = z.object({
+  childProfileId: z.uuid(),
+  allowanceEnabled: z.boolean(),
+  baseAllowanceDollars: z.string().trim().regex(/^\d+(\.\d{1,2})?$/).optional(),
+}).refine(
+  (value) => !value.allowanceEnabled || dollarsToCents(value.baseAllowanceDollars ?? "0") > 0,
+  {
+    message: "Enter an allowance amount.",
+    path: ["baseAllowanceDollars"],
+  },
+);
+
 function householdSetupError(message: string): never {
   redirect(`/parent/household?error=${encodeURIComponent(message)}`);
+}
+
+function dollarsToCents(value: string) {
+  const [dollars, cents = ""] = value.split(".");
+  return Number(dollars) * 100 + Number(cents.padEnd(2, "0"));
 }
 
 async function requireAdminHousehold() {
@@ -156,6 +173,38 @@ export async function updateParentRoleAction(formData: FormData) {
     .eq("household_id", householdId)
     .eq("user_id", parsed.data.parentUserId)
     .in("role", ["admin", "parent"]);
+
+  if (error) {
+    householdSetupError(error.message);
+  }
+
+  redirect("/parent/household?saved=1");
+}
+
+export async function updateChildAllowanceAction(formData: FormData) {
+  const parsed = updateChildAllowanceSchema.safeParse({
+    childProfileId: formData.get("childProfileId"),
+    allowanceEnabled: formData.get("allowanceEnabled") === "on",
+    baseAllowanceDollars: String(formData.get("baseAllowanceDollars") ?? "").trim() || undefined,
+  });
+
+  if (!parsed.success) {
+    householdSetupError("Enter a valid allowance amount.");
+  }
+
+  const amountCents = parsed.data.allowanceEnabled
+    ? dollarsToCents(parsed.data.baseAllowanceDollars ?? "0")
+    : 0;
+
+  const { householdId, supabase } = await requireAdminHousehold();
+  const { error } = await supabase
+    .from("child_profiles")
+    .update({
+      allowance_enabled: parsed.data.allowanceEnabled,
+      base_allowance_cents: amountCents,
+    })
+    .eq("id", parsed.data.childProfileId)
+    .eq("primary_household_id", householdId);
 
   if (error) {
     householdSetupError(error.message);

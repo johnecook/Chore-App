@@ -103,18 +103,47 @@ export default async function HouseholdOnboardingPage({
           </label>
 
           <fieldset className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
-            <legend className="text-lg font-semibold">Money features</legend>
+            <legend className="text-lg font-semibold">Chores and money</legend>
+            <label className="flex items-start gap-3 text-lg font-semibold">
+              <input
+                className="mt-2 size-5"
+                name="moneyMode"
+                type="radio"
+                value="none"
+              />
+              <span className="grid gap-1">
+                <span>No paid chores</span>
+                <span className="text-base font-normal text-[var(--muted)]">
+                  Use Rhythm for chores and routines without payouts or allowance tracking.
+                </span>
+              </span>
+            </label>
             <label className="flex items-start gap-3 text-lg font-semibold">
               <input
                 className="mt-2 size-5"
                 defaultChecked
-                name="moneyFeaturesEnabled"
-                type="checkbox"
+                name="moneyMode"
+                type="radio"
+                value="per_chore"
               />
               <span className="grid gap-1">
-                <span>Track paid chores and payouts</span>
+                <span>Chores with individual amounts</span>
                 <span className="text-base font-normal text-[var(--muted)]">
-                  Turn this off for chores-only households. You can still create unpaid chores and routines.
+                  New chores default to a fixed payout amount, with unpaid chores still available.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 text-lg font-semibold">
+              <input
+                className="mt-2 size-5"
+                name="moneyMode"
+                type="radio"
+                value="allowance_plus_bonus"
+              />
+              <span className="grid gap-1">
+                <span>Allowance plus extra payouts</span>
+                <span className="text-base font-normal text-[var(--muted)]">
+                  New chores default to included in allowance, with bonus payouts available for extras.
                 </span>
               </span>
             </label>

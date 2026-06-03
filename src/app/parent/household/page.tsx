@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   createChildInviteAction,
   createParentInviteAction,
+  updateChildAllowanceAction,
   updateParentRoleAction,
   updateHouseholdAction,
 } from "@/app/parent/household/actions";
@@ -21,6 +22,17 @@ const timezones = [
   { label: "Mountain time", value: "America/Denver" },
   { label: "Pacific time", value: "America/Los_Angeles" },
 ];
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function dollarsFromCents(cents: number) {
+  return cents > 0 ? (cents / 100).toFixed(2) : "";
+}
 
 export default async function ParentHouseholdPage({
   searchParams,
@@ -49,7 +61,7 @@ export default async function ParentHouseholdPage({
 
   const { data: household, error: householdError } = await supabase
     .from("households")
-    .select("id, name, timezone, money_features_enabled")
+    .select("id, name, timezone, money_features_enabled, money_mode")
     .eq("id", householdId)
     .maybeSingle();
 
@@ -94,7 +106,10 @@ export default async function ParentHouseholdPage({
   }
 
   const { data: childProfiles, error: childProfileError } = userIds.length
-    ? await supabase.from("child_profiles").select("id, user_id").in("user_id", userIds)
+    ? await supabase
+        .from("child_profiles")
+        .select("id, user_id, allowance_enabled, base_allowance_cents")
+        .in("user_id", userIds)
     : { data: [], error: null };
 
   if (childProfileError) {
@@ -253,7 +268,12 @@ export default async function ParentHouseholdPage({
               <h3 className="text-2xl font-semibold leading-tight">{household.name}</h3>
               <p className="text-base text-[var(--muted)]">{household.timezone}</p>
               <p className="text-base font-medium">
-                Money features are {household.money_features_enabled ? "on" : "off"}.
+                Money mode:{" "}
+                {household.money_mode === "none"
+                  ? "No paid chores"
+                  : household.money_mode === "allowance_plus_bonus"
+                    ? "Allowance plus extra payouts"
+                    : "Chores with individual amounts"}
               </p>
             </div>
             {canManageHousehold ? (
@@ -361,14 +381,59 @@ export default async function ParentHouseholdPage({
                         {childUser?.display_name ?? "Child"}
                       </h3>
                       <p className="text-base text-[var(--muted)]">Child</p>
+                      {household.money_features_enabled && childProfile ? (
+                        <p className="text-base font-medium">
+                          Base allowance:{" "}
+                          {childProfile.allowance_enabled
+                            ? formatMoney(childProfile.base_allowance_cents)
+                            : "Off"}
+                        </p>
+                      ) : null}
                     </div>
                     {childProfile ? (
-                      <Link
-                        className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
-                        href={`/parent/children/${childProfile.id}/availability`}
-                      >
-                        Set availability
-                      </Link>
+                      <>
+                        <Link
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
+                          href={`/parent/children/${childProfile.id}/availability`}
+                        >
+                          Set availability
+                        </Link>
+                        {canManageHousehold && household.money_features_enabled ? (
+                          <form action={updateChildAllowanceAction} className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-3">
+                            <input name="childProfileId" type="hidden" value={childProfile.id} />
+                            <label className="flex items-start gap-3 text-base font-semibold">
+                              <input
+                                className="mt-1 size-5"
+                                defaultChecked={childProfile.allowance_enabled}
+                                name="allowanceEnabled"
+                                type="checkbox"
+                              />
+                              <span className="grid gap-1">
+                                <span>Base allowance</span>
+                                <span className="text-sm font-normal text-[var(--muted)]">
+                                  Included once per payout period before extra chore payouts.
+                                </span>
+                              </span>
+                            </label>
+                            <label className="grid gap-2 text-base font-semibold">
+                              Amount per payout period
+                              <input
+                                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                                defaultValue={dollarsFromCents(childProfile.base_allowance_cents)}
+                                inputMode="decimal"
+                                min="0"
+                                name="baseAllowanceDollars"
+                                placeholder="10.00"
+                                step="0.01"
+                                type="number"
+                              />
+                            </label>
+                            <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
+                              Save allowance
+                            </button>
+                          </form>
+                        ) : null}
+                      </>
                     ) : null}
                   </article>
                 );

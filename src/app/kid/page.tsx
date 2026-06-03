@@ -359,7 +359,7 @@ export default async function KidHomePage({
         .from("ledger_transactions")
         .select("id, amount_cents, transaction_type, effective_date, created_at")
         .eq("child_profile_id", childProfile.id)
-        .in("transaction_type", ["approved_credit", "manual_adjustment", "payout"])
+        .in("transaction_type", ["allowance_credit", "approved_credit", "manual_adjustment", "payout"])
         .order("created_at", { ascending: false })
         .limit(20)
     : { data: [], error: null };

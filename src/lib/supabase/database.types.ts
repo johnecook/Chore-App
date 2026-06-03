@@ -33,6 +33,7 @@ export type Database = {
           name: string;
           timezone: string;
           money_features_enabled: boolean;
+          money_mode: Database["public"]["Enums"]["household_money_mode"];
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -42,6 +43,7 @@ export type Database = {
           name: string;
           timezone?: string;
           money_features_enabled?: boolean;
+          money_mode?: Database["public"]["Enums"]["household_money_mode"];
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -51,6 +53,7 @@ export type Database = {
           name?: string;
           timezone?: string;
           money_features_enabled?: boolean;
+          money_mode?: Database["public"]["Enums"]["household_money_mode"];
           created_by?: string;
           created_at?: string;
           updated_at?: string;
@@ -137,6 +140,8 @@ export type Database = {
           id: string;
           user_id: string;
           primary_household_id: string;
+          allowance_enabled: boolean;
+          base_allowance_cents: number;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -145,6 +150,8 @@ export type Database = {
           id?: string;
           user_id: string;
           primary_household_id: string;
+          allowance_enabled?: boolean;
+          base_allowance_cents?: number;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -153,6 +160,8 @@ export type Database = {
           id?: string;
           user_id?: string;
           primary_household_id?: string;
+          allowance_enabled?: boolean;
+          base_allowance_cents?: number;
           created_by?: string;
           created_at?: string;
           updated_at?: string;
@@ -838,8 +847,23 @@ export type Database = {
           pay_weekday?: number | null;
           pay_cycle?: Database["public"]["Enums"]["pay_cycle_type"] | null;
           biweekly_anchor_date?: string | null;
+          household_money_mode?: Database["public"]["Enums"]["household_money_mode"] | null;
         };
         Returns: string;
+      };
+      ensure_allowance_credit: {
+        Args: {
+          target_pay_period_id: string;
+          target_child_profile_id: string;
+        };
+        Returns: string | null;
+      };
+      ensure_current_allowance_credits: {
+        Args: {
+          target_household_id: string;
+          target_date?: string;
+        };
+        Returns: number;
       };
       create_child_invitation: {
         Args: {
@@ -982,8 +1006,14 @@ export type Database = {
         | "outdoor"
         | "family";
       chore_value_model: "fixed" | "allowance_included" | "unpaid";
+      household_money_mode: "none" | "per_chore" | "allowance_plus_bonus";
       household_role: "admin" | "parent" | "child";
-      ledger_transaction_type: "pending_credit" | "approved_credit" | "manual_adjustment" | "payout";
+      ledger_transaction_type:
+        | "pending_credit"
+        | "approved_credit"
+        | "allowance_credit"
+        | "manual_adjustment"
+        | "payout";
       monthly_ordinal: "1" | "2" | "3" | "4" | "last";
       notification_event_type:
         | "chore_available"

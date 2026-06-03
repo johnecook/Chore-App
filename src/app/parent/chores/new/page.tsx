@@ -50,7 +50,7 @@ export default async function NewChorePage({
   const supabase = await createSupabaseServerClient();
   const { data: household, error: householdError } = await supabase
     .from("households")
-    .select("id, money_features_enabled")
+    .select("id, money_features_enabled, money_mode")
     .eq("id", householdId)
     .maybeSingle();
 
@@ -59,6 +59,12 @@ export default async function NewChorePage({
   }
 
   const moneyFeaturesEnabled = household?.money_features_enabled ?? false;
+  const defaultHouseholdValueModel =
+    household?.money_mode === "allowance_plus_bonus"
+      ? "allowance_included"
+      : moneyFeaturesEnabled
+        ? "fixed"
+        : "unpaid";
   const { data: childMemberships, error: membershipError } = await supabase
     .from("household_memberships")
     .select("user_id")
@@ -123,7 +129,7 @@ export default async function NewChorePage({
   const defaultValueModel =
     selectedPreset?.suggested_value_model === "fixed" && !moneyFeaturesEnabled
       ? "unpaid"
-      : (selectedPreset?.suggested_value_model ?? (moneyFeaturesEnabled ? "fixed" : "unpaid"));
+      : (selectedPreset?.suggested_value_model ?? defaultHouseholdValueModel);
   const defaultScheduleType = selectedPreset?.suggested_schedule_type ?? "one_off";
   const defaultOneOffDate =
     selectedPreset?.suggested_schedule_type === "one_off" || !selectedPreset ? today : "";
