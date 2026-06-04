@@ -4,16 +4,29 @@ import { AuthFrame } from "@/components/auth-frame";
 export default async function CheckEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; invite?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const next = params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined;
+  const signInParams = new URLSearchParams();
+
+  if (next) {
+    signInParams.set("next", next);
+  }
+
+  if (params.invite) {
+    signInParams.set("invite", params.invite);
+  }
 
   return (
     <AuthFrame
       footer={
         <>
           Already verified?{" "}
-          <Link className="font-semibold text-[var(--accent-strong)]" href="/sign-in">
+          <Link
+            className="font-semibold text-[var(--accent-strong)]"
+            href={`/sign-in${signInParams.size > 0 ? `?${signInParams.toString()}` : ""}`}
+          >
             Sign in
           </Link>
         </>

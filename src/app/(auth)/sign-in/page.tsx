@@ -2,26 +2,45 @@ import Link from "next/link";
 import { signInAction } from "@/app/auth/actions";
 import { AuthFrame } from "@/components/auth-frame";
 import { PasswordField } from "@/components/password-field";
+import { getInviteSignupContext } from "@/lib/invitations";
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; invite?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const invite = await getInviteSignupContext(params.invite);
+  const next = params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined;
+  const signUpParams = new URLSearchParams();
+
+  if (invite) {
+    signUpParams.set("invite", invite.id);
+  }
+
+  if (next) {
+    signUpParams.set("next", next);
+  }
 
   return (
     <AuthFrame
       footer={
         <>
           Need an account?{" "}
-          <Link className="font-semibold text-[var(--accent-strong)]" href="/sign-up">
+          <Link
+            className="font-semibold text-[var(--accent-strong)]"
+            href={`/sign-up${signUpParams.size > 0 ? `?${signUpParams.toString()}` : ""}`}
+          >
             Create one
           </Link>
         </>
       }
-      intro="Use the email and password for your account."
-      title="Sign in"
+      intro={
+        invite
+          ? `Sign in with ${invite.email} to accept this ${invite.role} invite.`
+          : "Use the email and password for your account."
+      }
+      title={invite ? `Accept ${invite.role} invite` : "Sign in"}
     >
         {params.error ? (
           <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
@@ -30,11 +49,14 @@ export default async function SignInPage({
         ) : null}
 
         <form action={signInAction} className="grid gap-4">
+          {invite ? <input name="invitationId" type="hidden" value={invite.id} /> : null}
+          {next ? <input name="next" type="hidden" value={next} /> : null}
           <label className="grid gap-2 text-lg font-semibold">
             Email
             <input
               autoComplete="email"
               className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+              defaultValue={invite?.email}
               name="email"
               required
               type="email"

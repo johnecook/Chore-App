@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   acceptChildInvitationAction,
   acceptParentInvitationAction,
 } from "@/app/invite/[invitationId]/actions";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AppShell } from "@/components/ui";
-import { requireCurrentProfile } from "@/lib/auth/session";
+import { getCurrentProfile } from "@/lib/auth/session";
+import { getInviteSignupContext } from "@/lib/invitations";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +19,20 @@ export default async function InvitePage({
   params: Promise<{ invitationId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [profile, routeParams, query] = await Promise.all([
-    requireCurrentProfile(),
-    params,
-    searchParams,
-  ]);
+  const [routeParams, query] = await Promise.all([params, searchParams]);
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    const invite = await getInviteSignupContext(routeParams.invitationId);
+    const next = `/invite/${routeParams.invitationId}`;
+    const signInParams = new URLSearchParams({ next });
+
+    if (invite) {
+      signInParams.set("invite", invite.id);
+    }
+
+    redirect(`/sign-in?${signInParams.toString()}`);
+  }
 
   return (
     <AppShell className="max-w-3xl" variant="web">
