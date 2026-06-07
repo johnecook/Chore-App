@@ -397,19 +397,19 @@ function CommonChorePresets({
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {category.presets.map((preset) => (
                 <Link
-                  className="grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-4 transition hover:border-[var(--accent-strong)] hover:bg-white/8"
+                  className="grid h-full grid-rows-[auto_1fr_auto] gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-4 transition hover:border-[var(--accent-strong)] hover:bg-white/8"
                   href={`/parent/chores/new?preset=${preset.id}`}
                   key={preset.id}
                 >
                   <h4 className="text-lg font-semibold leading-snug">{preset.title}</h4>
                   {preset.description ? (
-                    <p className="text-base text-[var(--muted)]">{preset.description}</p>
+                    <p className="text-base leading-snug text-[var(--muted)]">{preset.description}</p>
                   ) : null}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex min-h-8 flex-wrap items-end gap-2">
                     {[scheduleTypeLabel(preset.suggested_schedule_type), presetValueLabel(preset)].map(
                       (item) => (
                         <span
-                          className="rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold text-[var(--accent-strong)]"
+                          className="inline-flex min-h-8 items-center rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold leading-none text-[var(--accent-strong)]"
                           key={item}
                         >
                           {item}
