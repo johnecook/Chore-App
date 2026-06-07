@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { deactivateTemplateAction, reactivateTemplateAction } from "@/app/parent/actions";
 import { ParentNav } from "@/components/parent-nav";
-import { AppShell } from "@/components/ui";
+import { AppShell, ButtonLink } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,6 +26,31 @@ type ChoreTemplate = Pick<
   | "value_model"
   | "weekly_weekdays"
 >;
+
+type ChorePreset = Pick<
+  Database["public"]["Tables"]["chore_template_presets"]["Row"],
+  | "category"
+  | "description"
+  | "display_order"
+  | "id"
+  | "suggested_amount_cents"
+  | "suggested_schedule_type"
+  | "suggested_value_model"
+  | "title"
+>;
+
+const presetCategories: Array<{
+  value: Database["public"]["Enums"]["chore_template_preset_category"];
+  label: string;
+}> = [
+  { value: "kitchen", label: "Kitchen" },
+  { value: "bedroom", label: "Bedroom" },
+  { value: "bathroom", label: "Bathroom" },
+  { value: "laundry", label: "Laundry" },
+  { value: "pets", label: "Pets" },
+  { value: "outdoor", label: "Outdoor" },
+  { value: "family", label: "Family" },
+];
 
 const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -189,6 +214,19 @@ export default async function ParentChoresPage({
     throw new Error(checklistError.message);
   }
 
+  const { data: presets, error: presetError } = await supabase
+    .from("chore_template_presets")
+    .select(
+      "id, category, display_order, title, description, suggested_schedule_type, suggested_value_model, suggested_amount_cents",
+    )
+    .eq("active", true)
+    .order("category", { ascending: true })
+    .order("display_order", { ascending: true });
+
+  if (presetError) {
+    throw new Error(presetError.message);
+  }
+
   const checklistCountByTemplateId = new Map<string, number>();
   for (const item of checklistItems ?? []) {
     checklistCountByTemplateId.set(
@@ -196,6 +234,13 @@ export default async function ParentChoresPage({
       (checklistCountByTemplateId.get(item.template_id) ?? 0) + 1,
     );
   }
+  const presetsByCategory = presetCategories
+    .map((category) => ({
+      ...category,
+      presets:
+        presets?.filter((preset): preset is ChorePreset => preset.category === category.value) ?? [],
+    }))
+    .filter((category) => category.presets.length > 0);
 
   return (
     <AppShell variant="web">
@@ -209,12 +254,9 @@ export default async function ParentChoresPage({
                   Manage recurring chores and chores for specific dates.
                 </p>
               </div>
-              <Link
-                className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-center text-lg font-semibold text-white"
-                href="/parent/chores/new"
-              >
+              <ButtonLink className="min-h-12 px-5 py-3 text-lg" href="/parent/chores/new">
                 Add chore
-              </Link>
+              </ButtonLink>
             </div>
           </div>
         </header>
@@ -275,12 +317,113 @@ export default async function ParentChoresPage({
               ) : null}
             </div>
           ) : (
-            <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
-              No chore templates yet.
-            </p>
+            <div className="grid gap-6">
+              <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
+                <div className="grid gap-1">
+                  <h3 className="text-xl font-semibold">No household chores yet</h3>
+                  <p className="text-lg text-[var(--muted)]">
+                    Start with a common chore below or create one from scratch.
+                  </p>
+                </div>
+                <ButtonLink className="w-fit px-4 py-2 text-base" href="/parent/chores/new">
+                  Create custom chore
+                </ButtonLink>
+              </div>
+              {presetsByCategory.length ? <CommonChorePresets presetsByCategory={presetsByCategory} /> : null}
+            </div>
           )}
         </section>
     </AppShell>
+  );
+}
+
+function scheduleTypeLabel(scheduleType: Database["public"]["Enums"]["chore_schedule_type"]) {
+  if (scheduleType === "daily") {
+    return "Daily";
+  }
+
+  if (scheduleType === "weekly") {
+    return "Weekly";
+  }
+
+  if (scheduleType === "interval") {
+    return "Every few days";
+  }
+
+  return "Specific date";
+}
+
+function presetValueLabel(preset: ChorePreset) {
+  if (preset.suggested_value_model === "fixed") {
+    return formatDollars(preset.suggested_amount_cents);
+  }
+
+  if (preset.suggested_value_model === "allowance_included") {
+    return "Allowance";
+  }
+
+  return "Unpaid";
+}
+
+function CommonChorePresets({
+  presetsByCategory,
+}: {
+  presetsByCategory: Array<{
+    label: string;
+    presets: ChorePreset[];
+    value: Database["public"]["Enums"]["chore_template_preset_category"];
+  }>;
+}) {
+  return (
+    <section aria-labelledby="common-chores-heading" className="grid gap-4">
+      <div className="grid gap-1">
+        <h3 id="common-chores-heading" className="text-xl font-semibold">
+          Common chores
+        </h3>
+        <p className="text-base text-[var(--muted)]">
+          Choose a starter chore, then adjust schedule, assignment, proof, and value before saving.
+        </p>
+      </div>
+      <div className="grid gap-3">
+        {presetsByCategory.map((category) => (
+          <details
+            className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+            key={category.value}
+            open={category.value === "kitchen" || category.value === "bedroom"}
+          >
+            <summary className="cursor-pointer text-lg font-semibold">
+              {category.label} ({category.presets.length})
+            </summary>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {category.presets.map((preset) => (
+                <Link
+                  className="grid gap-2 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-4 transition hover:border-[var(--accent-strong)] hover:bg-white/8"
+                  href={`/parent/chores/new?preset=${preset.id}`}
+                  key={preset.id}
+                >
+                  <h4 className="text-lg font-semibold leading-snug">{preset.title}</h4>
+                  {preset.description ? (
+                    <p className="text-base text-[var(--muted)]">{preset.description}</p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {[scheduleTypeLabel(preset.suggested_schedule_type), presetValueLabel(preset)].map(
+                      (item) => (
+                        <span
+                          className="rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold text-[var(--accent-strong)]"
+                          key={item}
+                        >
+                          {item}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
   );
 }
 

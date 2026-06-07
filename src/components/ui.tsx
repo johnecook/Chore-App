@@ -31,7 +31,7 @@ export function AppShell({
       <div
         className={cn(
           isWeb
-            ? "grid min-h-dvh gap-6 py-5 sm:py-8"
+            ? "grid content-start gap-6 py-5 sm:py-8"
             : "rhythm-panel grid min-h-dvh gap-6 px-5 pb-28 pt-5 sm:my-4 sm:min-h-[calc(100dvh-2rem)] sm:px-6",
         )}
       >
@@ -89,10 +89,10 @@ export function Button({
   return (
     <button
       className={cn(
-        "rhythm-control inline-flex items-center justify-center px-5 py-3 text-center text-lg font-semibold transition disabled:opacity-60",
-        variant === "primary" && "bg-[#0F6EA4] text-white shadow-[var(--shadow-card)]",
-        variant === "secondary" && "border border-[var(--line)] bg-white/8 text-[var(--foreground)]",
-        variant === "danger" && "border border-[var(--danger)] bg-transparent text-[var(--danger)]",
+        "rhythm-control inline-flex items-center justify-center px-5 py-3 text-center text-lg font-semibold disabled:opacity-60",
+        variant === "primary" && "rhythm-control-primary bg-[#0F6EA4] text-white shadow-[var(--shadow-card)]",
+        variant === "secondary" && "rhythm-control-secondary border border-[var(--line)] bg-white/8 text-[var(--foreground)]",
+        variant === "danger" && "rhythm-control-danger border border-[var(--danger)] bg-transparent text-[var(--danger)]",
         className,
       )}
       {...props}
@@ -114,9 +114,9 @@ export function ButtonLink({
   return (
     <Link
       className={cn(
-        "rhythm-control inline-flex items-center justify-center px-5 py-3 text-center text-lg font-semibold transition",
-        variant === "primary" && "bg-[#0F6EA4] text-white shadow-[var(--shadow-card)]",
-        variant === "secondary" && "border border-[var(--line)] bg-white/8 text-[var(--foreground)]",
+        "rhythm-control inline-flex items-center justify-center px-5 py-3 text-center text-lg font-semibold",
+        variant === "primary" && "rhythm-control-primary bg-[#0F6EA4] text-white shadow-[var(--shadow-card)]",
+        variant === "secondary" && "rhythm-control-secondary border border-[var(--line)] bg-white/8 text-[var(--foreground)]",
         className,
       )}
       {...props}

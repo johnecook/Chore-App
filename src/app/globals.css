@@ -71,6 +71,26 @@ button {
   touch-action: manipulation;
 }
 
+button,
+.rhythm-control {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+button:not(:disabled),
+.rhythm-control[href] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 input,
 select,
 textarea {
@@ -118,6 +138,62 @@ textarea {
 .rhythm-control {
   min-height: var(--touch-target);
   border-radius: var(--radius-md);
+}
+
+.rhythm-control-primary {
+  border: 1px solid rgba(174, 235, 242, 0.2);
+}
+
+.rhythm-control-secondary {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rhythm-control-danger {
+  box-shadow: inset 0 1px 0 rgba(255, 180, 180, 0.08);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  .rhythm-control[href]:hover {
+    filter: brightness(1.12) saturate(1.08);
+    transform: translateY(-1px);
+  }
+
+  .rhythm-control-primary:hover {
+    background: #127db8;
+    border-color: rgba(174, 235, 242, 0.48);
+    box-shadow: var(--shadow-raised);
+  }
+
+  .rhythm-control-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(174, 235, 242, 0.44);
+  }
+
+  .rhythm-control-danger:hover {
+    background: rgba(255, 180, 180, 0.12);
+    border-color: rgba(255, 180, 180, 0.72);
+    color: #ffe2e2;
+  }
+}
+
+button:not(:disabled):active,
+.rhythm-control[href]:active {
+  filter: brightness(0.95) saturate(1.05);
+  transform: translateY(1px) scale(0.99);
+}
+
+.rhythm-control-primary:active {
+  background: #0c547d;
+  box-shadow: 0 10px 24px rgba(5, 12, 35, 0.22);
+}
+
+.rhythm-control-secondary:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rhythm-control-danger:active {
+  background: rgba(255, 180, 180, 0.18);
 }
 
 .text-balance {
