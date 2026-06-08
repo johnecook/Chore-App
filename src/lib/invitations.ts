@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type InviteSignupContext = {
   id: string;
@@ -16,24 +16,18 @@ export async function getInviteSignupContext(
     return null;
   }
 
-  const supabase = createSupabaseServiceRoleClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("household_invitations")
-    .select("id, email, role, child_display_name, accepted_at, revoked_at, expires_at")
-    .eq("id", invitationId)
+    .rpc("get_invite_signup_context", {
+      target_invitation_id: invitationId,
+    })
     .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  if (
-    !data ||
-    data.accepted_at ||
-    data.revoked_at ||
-    new Date(data.expires_at).getTime() <= Date.now() ||
-    (data.role !== "parent" && data.role !== "child")
-  ) {
+  if (!data || (data.role !== "parent" && data.role !== "child")) {
     return null;
   }
 

@@ -68,6 +68,17 @@ begin
     raise exception 'Expected open parent invitation';
   end if;
 
+  if not exists (
+    select 1
+    from public.get_invite_signup_context(invitation_id) context
+    where context.id = invitation_id
+      and context.email = 'parent-invite-parent@example.test'
+      and context.role = 'parent'
+      and context.child_display_name is null
+  ) then
+    raise exception 'Expected parent invite signup context';
+  end if;
+
   perform set_config('request.jwt.claim.sub', child_id::text, true);
 
   begin

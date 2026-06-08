@@ -53,6 +53,17 @@ begin
     raise exception 'Expected open child invitation';
   end if;
 
+  if not exists (
+    select 1
+    from public.get_invite_signup_context(invitation_id) context
+    where context.id = invitation_id
+      and context.email = 'invite-child@example.test'
+      and context.role = 'child'
+      and context.child_display_name = 'Invite Child'
+  ) then
+    raise exception 'Expected child invite signup context';
+  end if;
+
   perform set_config('request.jwt.claim.sub', child_id::text, true);
 
   child_profile_id := public.accept_child_invitation(invitation_id);

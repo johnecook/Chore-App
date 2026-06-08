@@ -880,6 +880,17 @@ export type Database = {
         };
         Returns: string;
       };
+      get_invite_signup_context: {
+        Args: {
+          target_invitation_id: string;
+        };
+        Returns: {
+          id: string;
+          email: string;
+          role: Database["public"]["Enums"]["household_role"];
+          child_display_name: string | null;
+        }[];
+      };
       accept_child_invitation: {
         Args: {
           target_invitation_id: string;
