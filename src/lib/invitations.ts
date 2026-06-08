@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type InviteSignupContext = {
+  accountExists: boolean;
   id: string;
   email: string;
   role: "parent" | "child";
@@ -32,6 +33,7 @@ export async function getInviteSignupContext(
   }
 
   return {
+    accountExists: data.account_exists,
     id: data.id,
     email: data.email,
     role: data.role,

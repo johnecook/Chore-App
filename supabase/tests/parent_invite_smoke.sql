@@ -75,6 +75,7 @@ begin
       and context.email = 'parent-invite-parent@example.test'
       and context.role = 'parent'
       and context.child_display_name is null
+      and context.account_exists
   ) then
     raise exception 'Expected parent invite signup context';
   end if;

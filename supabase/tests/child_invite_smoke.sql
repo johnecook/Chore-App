@@ -60,6 +60,7 @@ begin
       and context.email = 'invite-child@example.test'
       and context.role = 'child'
       and context.child_display_name = 'Invite Child'
+      and context.account_exists
   ) then
     raise exception 'Expected child invite signup context';
   end if;

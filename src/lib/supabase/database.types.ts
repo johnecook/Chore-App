@@ -889,6 +889,7 @@ export type Database = {
           email: string;
           role: Database["public"]["Enums"]["household_role"];
           child_display_name: string | null;
+          account_exists: boolean;
         }[];
       };
       accept_child_invitation: {

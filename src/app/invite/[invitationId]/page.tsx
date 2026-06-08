@@ -25,13 +25,14 @@ export default async function InvitePage({
   if (!profile) {
     const invite = await getInviteSignupContext(routeParams.invitationId);
     const next = `/invite/${routeParams.invitationId}`;
-    const signInParams = new URLSearchParams({ next });
+    const authParams = new URLSearchParams({ next });
 
     if (invite) {
-      signInParams.set("invite", invite.id);
+      authParams.set("invite", invite.id);
     }
 
-    redirect(`/sign-in?${signInParams.toString()}`);
+    const authPath = invite && !invite.accountExists ? "/sign-up" : "/sign-in";
+    redirect(`${authPath}?${authParams.toString()}`);
   }
 
   return (

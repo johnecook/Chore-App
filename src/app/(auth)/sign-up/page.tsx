@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { signUpAction } from "@/app/auth/actions";
 import { AuthFrame } from "@/components/auth-frame";
 import { PasswordField } from "@/components/password-field";
@@ -20,6 +21,10 @@ export default async function SignUpPage({
 
   if (next) {
     signInParams.set("next", next);
+  }
+
+  if (invite?.accountExists) {
+    redirect(`/sign-in?${signInParams.toString()}`);
   }
 
   return (
