@@ -35,6 +35,87 @@ function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
 }
 
+function CreateInviteSection() {
+  return (
+    <section aria-labelledby="create-invite-heading" className="grid gap-3">
+      <div className="grid gap-1">
+        <h2 id="create-invite-heading" className="text-xl font-semibold">
+          Create invite code
+        </h2>
+        <p className="max-w-2xl text-base text-[var(--muted)]">
+          Create a household invite link, then copy it or open a prefilled email.
+        </p>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <form
+          action={createChildInviteAction}
+          className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+        >
+          <div className="grid gap-1">
+            <h3 className="text-xl font-semibold">Child invite</h3>
+            <p className="text-base text-[var(--muted)]">
+              They sign in with their own child account and accept the invite.
+            </p>
+          </div>
+
+          <label className="grid gap-2 text-lg font-semibold">
+            Child name
+            <input
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+              name="childName"
+              required
+              type="text"
+            />
+          </label>
+
+          <label className="grid gap-2 text-lg font-semibold">
+            Child email
+            <input
+              autoComplete="email"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+              name="childEmail"
+              required
+              type="email"
+            />
+          </label>
+
+          <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+            Create invite code
+          </button>
+        </form>
+
+        <form
+          action={createParentInviteAction}
+          className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+        >
+          <div className="grid gap-1">
+            <h3 className="text-xl font-semibold">Parent invite</h3>
+            <p className="text-base text-[var(--muted)]">
+              Parent accounts belong to one household at a time.
+            </p>
+          </div>
+
+          <label className="grid gap-2 text-lg font-semibold">
+            Parent email
+            <input
+              autoComplete="email"
+              className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+              name="parentEmail"
+              required
+              type="email"
+            />
+          </label>
+
+          <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
+            Create invite code
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
 export default async function ParentHouseholdPage({
   searchParams,
 }: {
@@ -133,6 +214,7 @@ export default async function ParentHouseholdPage({
   const createdInvite = params.invited
     ? pendingInvites.find((invite) => invite.id === params.invited)
     : undefined;
+  const hasInviteActivity = Boolean(invitations?.length);
 
   return (
     <AppShell variant="web">
@@ -182,84 +264,7 @@ export default async function ParentHouseholdPage({
           </div>
         ) : null}
 
-        {canManageHousehold ? (
-          <section aria-labelledby="create-invite-heading" className="grid gap-3">
-            <div className="grid gap-1">
-              <h2 id="create-invite-heading" className="text-xl font-semibold">
-                Create invite code
-              </h2>
-              <p className="max-w-2xl text-base text-[var(--muted)]">
-                Create a household invite link, then copy it or open a prefilled email.
-              </p>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <form
-                action={createChildInviteAction}
-                className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
-              >
-                <div className="grid gap-1">
-                  <h3 className="text-xl font-semibold">Child invite</h3>
-                  <p className="text-base text-[var(--muted)]">
-                    They sign in with their own child account and accept the invite.
-                  </p>
-                </div>
-
-                <label className="grid gap-2 text-lg font-semibold">
-                  Child name
-                  <input
-                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                    name="childName"
-                    required
-                    type="text"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-lg font-semibold">
-                  Child email
-                  <input
-                    autoComplete="email"
-                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                    name="childEmail"
-                    required
-                    type="email"
-                  />
-                </label>
-
-                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                  Create invite code
-                </button>
-              </form>
-
-              <form
-                action={createParentInviteAction}
-                className="grid content-start gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
-              >
-                <div className="grid gap-1">
-                  <h3 className="text-xl font-semibold">Parent invite</h3>
-                  <p className="text-base text-[var(--muted)]">
-                    Parent accounts belong to one household at a time.
-                  </p>
-                </div>
-
-                <label className="grid gap-2 text-lg font-semibold">
-                  Parent email
-                  <input
-                    autoComplete="email"
-                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                    name="parentEmail"
-                    required
-                    type="email"
-                  />
-                </label>
-
-                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                  Create invite code
-                </button>
-              </form>
-            </div>
-          </section>
-        ) : null}
+        {canManageHousehold && !hasInviteActivity ? <CreateInviteSection /> : null}
 
         <section aria-labelledby="household-details-heading" className="grid gap-3">
           <h2 id="household-details-heading" className="text-xl font-semibold">
@@ -530,6 +535,17 @@ export default async function ParentHouseholdPage({
             )}
           </div>
         </section>
+
+        {canManageHousehold && hasInviteActivity ? (
+          <details className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-4">
+            <summary className="cursor-pointer text-xl font-semibold text-white">
+              Invite more people
+            </summary>
+            <div className="mt-4">
+              <CreateInviteSection />
+            </div>
+          </details>
+        ) : null}
     </AppShell>
   );
 }
