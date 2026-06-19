@@ -30,6 +30,14 @@ function safeNextPath(rawNext: string | null | undefined) {
   return rawNext;
 }
 
+function inviteNextPath(invitationId: string | null | undefined, rawNext: string | null | undefined) {
+  if (rawNext?.startsWith("/") && !rawNext.startsWith("//")) {
+    return rawNext;
+  }
+
+  return invitationId ? `/invite/${invitationId}` : "/start";
+}
+
 function configuredAppOrigin() {
   const appUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL;
 
@@ -57,13 +65,14 @@ async function requestAppOrigin() {
 async function createEmailRedirectTo(invitationId?: string, next?: string) {
   const origin = configuredAppOrigin() ?? await requestAppOrigin();
   const redirectUrl = new URL("/sign-in", origin);
+  const nextPath = inviteNextPath(invitationId, next);
 
   if (invitationId) {
     redirectUrl.searchParams.set("invite", invitationId);
   }
 
-  if (next) {
-    redirectUrl.searchParams.set("next", safeNextPath(next));
+  if (nextPath !== "/start") {
+    redirectUrl.searchParams.set("next", nextPath);
   }
 
   return redirectUrl.toString();
@@ -121,7 +130,7 @@ export async function signInAction(formData: FormData) {
     signInErrorRedirect(error.message, parsed.data.invitationId, parsed.data.next);
   }
 
-  redirect(safeNextPath(parsed.data.next));
+  redirect(inviteNextPath(parsed.data.invitationId, parsed.data.next));
 }
 
 export async function signUpAction(formData: FormData) {
@@ -181,9 +190,10 @@ export async function signUpAction(formData: FormData) {
   }
 
   const params = new URLSearchParams({ email: parsed.data.email });
+  const nextPath = inviteNextPath(parsed.data.invitationId, parsed.data.next);
 
-  if (parsed.data.next) {
-    params.set("next", safeNextPath(parsed.data.next));
+  if (nextPath !== "/start") {
+    params.set("next", nextPath);
   }
 
   if (parsed.data.invitationId) {
