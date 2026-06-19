@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AuthHashRedirect } from "@/components/auth-hash-redirect";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        <AuthHashRedirect />
         <ServiceWorkerRegistration />
       </body>
     </html>
