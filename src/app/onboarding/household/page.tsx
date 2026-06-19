@@ -80,8 +80,8 @@ export default async function HouseholdOnboardingPage({
           <label className="grid gap-2 text-lg font-semibold">
             Household name
             <input
+              autoComplete="off"
               className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-              defaultValue="Cook Household"
               name="householdName"
               required
               type="text"
