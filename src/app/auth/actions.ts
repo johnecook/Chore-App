@@ -102,7 +102,12 @@ function signUpErrorRedirect(message: string, invitationId?: string, next?: stri
   redirect(`/sign-up?${params.toString()}`);
 }
 
-function signInErrorRedirect(message: string, invitationId?: string, next?: string): never {
+function signInErrorRedirect(
+  message: string,
+  invitationId?: string,
+  next?: string,
+  email?: string,
+): never {
   const params = new URLSearchParams({ error: message });
 
   if (invitationId) {
@@ -111,6 +116,10 @@ function signInErrorRedirect(message: string, invitationId?: string, next?: stri
 
   if (next) {
     params.set("next", safeNextPath(next));
+  }
+
+  if (email) {
+    params.set("email", email);
   }
 
   redirect(`/sign-in?${params.toString()}`);
@@ -127,7 +136,12 @@ export async function signInAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    signInErrorRedirect("Enter a valid email and password.", rawInvitationId, rawNext);
+    signInErrorRedirect(
+      "Enter a valid email and password.",
+      rawInvitationId,
+      rawNext,
+      formData.get("email")?.toString(),
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -137,7 +151,7 @@ export async function signInAction(formData: FormData) {
   });
 
   if (error) {
-    signInErrorRedirect(error.message, parsed.data.invitationId, parsed.data.next);
+    signInErrorRedirect(error.message, parsed.data.invitationId, parsed.data.next, parsed.data.email);
   }
 
   redirect(inviteNextPath(parsed.data.invitationId, parsed.data.next));

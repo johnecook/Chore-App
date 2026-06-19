@@ -5,7 +5,7 @@ import { AuthFrame } from "@/components/auth-frame";
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; sent?: string }>;
+  searchParams: Promise<{ email?: string; error?: string; sent?: string }>;
 }) {
   const params = await searchParams;
 
@@ -40,6 +40,7 @@ export default async function ForgotPasswordPage({
             <input
               autoComplete="email"
               className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+              defaultValue={params.email}
               name="email"
               required
               type="email"

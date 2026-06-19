@@ -8,11 +8,13 @@ import { getInviteSignupContext } from "@/lib/invitations";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; invite?: string; next?: string }>;
+  searchParams: Promise<{ email?: string; error?: string; invite?: string; next?: string }>;
 }) {
   const params = await searchParams;
   const invite = await getInviteSignupContext(params.invite);
   const next = params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined;
+  const email = params.email ?? invite?.email;
+  const forgotPasswordHref = `/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`;
   const signUpParams = new URLSearchParams();
 
   if (invite) {
@@ -51,7 +53,7 @@ export default async function SignInPage({
           <div className="grid gap-2 rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
             <p>{params.error}</p>
             {params.error.toLowerCase().includes("credential") ? (
-              <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/forgot-password">
+              <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href={forgotPasswordHref}>
                 Reset your password
               </Link>
             ) : null}
@@ -66,7 +68,7 @@ export default async function SignInPage({
             <input
               autoComplete="email"
               className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-              defaultValue={invite?.email}
+              defaultValue={email}
               name="email"
               required
               type="email"
@@ -75,7 +77,7 @@ export default async function SignInPage({
 
           <PasswordField autoComplete="current-password" label="Password" name="password" />
 
-          <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/forgot-password">
+          <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href={forgotPasswordHref}>
             Forgot password?
           </Link>
 
