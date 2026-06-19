@@ -70,6 +70,10 @@ export default async function SignInPage({
 
           <PasswordField autoComplete="current-password" label="Password" name="password" />
 
+          <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/forgot-password">
+            Forgot password?
+          </Link>
+
           <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
             Sign in
           </button>

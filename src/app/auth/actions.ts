@@ -22,6 +22,10 @@ const signUpSchema = z.object({
   next: z.string().optional(),
 });
 
+const passwordResetRequestSchema = z.object({
+  email: z.email(),
+});
+
 function safeNextPath(rawNext: string | null | undefined) {
   if (!rawNext || !rawNext.startsWith("/") || rawNext.startsWith("//")) {
     return "/start";
@@ -76,6 +80,12 @@ async function createEmailRedirectTo(invitationId?: string, next?: string) {
   }
 
   return redirectUrl.toString();
+}
+
+async function createPasswordResetRedirectTo() {
+  const origin = configuredAppOrigin() ?? await requestAppOrigin();
+
+  return new URL("/reset-password", origin).toString();
 }
 
 function signUpErrorRedirect(message: string, invitationId?: string, next?: string): never {
@@ -207,4 +217,25 @@ export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/sign-in");
+}
+
+export async function requestPasswordResetAction(formData: FormData) {
+  const parsed = passwordResetRequestSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    redirect("/forgot-password?error=Enter a valid email address.");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: await createPasswordResetRedirectTo(),
+  });
+
+  if (error) {
+    redirect(`/forgot-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(`/forgot-password?sent=${encodeURIComponent(parsed.data.email)}`);
 }
