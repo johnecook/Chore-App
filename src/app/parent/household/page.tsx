@@ -8,6 +8,7 @@ import {
   updateParentRoleAction,
   updateHouseholdAction,
 } from "@/app/parent/household/actions";
+import { HouseholdQueryCleanup } from "@/app/parent/household/household-query-cleanup";
 import { InviteLinkActions } from "@/app/parent/household/invite-link-actions";
 import { ParentNav } from "@/components/parent-nav";
 import { AppShell } from "@/components/ui";
@@ -135,6 +136,7 @@ export default async function ParentHouseholdPage({
 
   return (
     <AppShell variant="web">
+        <HouseholdQueryCleanup />
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
