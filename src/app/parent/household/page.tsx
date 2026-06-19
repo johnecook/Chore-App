@@ -401,7 +401,7 @@ export default async function ParentHouseholdPage({
                       <>
                         <Link
                           className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
-                          href={`/parent/children/${childProfile.id}/availability`}
+                          href={`/parent/children/${childProfile.id}/availability?returnTo=${encodeURIComponent("/parent/household")}&returnLabel=${encodeURIComponent("Household")}`}
                         >
                           Set availability
                         </Link>

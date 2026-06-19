@@ -25,8 +25,59 @@ const deleteOverrideSchema = z.object({
   overrideId: z.uuid(),
 });
 
-function availabilityError(childProfileId: string, message: string): never {
-  redirect(`/parent/children/${childProfileId}/availability?error=${encodeURIComponent(message)}`);
+function safeReturnPath(rawReturnTo: FormDataEntryValue | null) {
+  const returnTo = rawReturnTo?.toString();
+
+  if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return null;
+  }
+
+  return returnTo;
+}
+
+function safeReturnLabel(rawReturnLabel: FormDataEntryValue | null) {
+  const returnLabel = rawReturnLabel?.toString().trim();
+
+  if (!returnLabel) {
+    return null;
+  }
+
+  return returnLabel.slice(0, 80);
+}
+
+function availabilityRedirectPath(
+  childProfileId: string,
+  params: { error?: string; returnLabel?: string | null; returnTo?: string | null; saved?: string },
+) {
+  const searchParams = new URLSearchParams();
+
+  if (params.error) {
+    searchParams.set("error", params.error);
+  }
+
+  if (params.saved) {
+    searchParams.set("saved", params.saved);
+  }
+
+  if (params.returnTo) {
+    searchParams.set("returnTo", params.returnTo);
+  }
+
+  if (params.returnLabel) {
+    searchParams.set("returnLabel", params.returnLabel);
+  }
+
+  return `/parent/children/${childProfileId}/availability?${searchParams.toString()}`;
+}
+
+function availabilityError(childProfileId: string, message: string, formData?: FormData): never {
+  redirect(
+    availabilityRedirectPath(childProfileId, {
+      error: message,
+      returnLabel: formData ? safeReturnLabel(formData.get("returnLabel")) : null,
+      returnTo: formData ? safeReturnPath(formData.get("returnTo")) : null,
+    }),
+  );
 }
 
 function offsetsForPattern(formData: FormData): number[] {
@@ -59,7 +110,7 @@ export async function saveAvailabilityWindowAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    availabilityError(childProfileId, "Choose a valid custody pattern.");
+    availabilityError(childProfileId, "Choose a valid custody pattern.", formData);
   }
 
   const householdId = await requireCurrentParentHouseholdId();
@@ -75,10 +126,16 @@ export async function saveAvailabilityWindowAction(formData: FormData) {
   });
 
   if (error) {
-    availabilityError(parsed.data.childProfileId, error.message);
+    availabilityError(parsed.data.childProfileId, error.message, formData);
   }
 
-  redirect(`/parent/children/${parsed.data.childProfileId}/availability?saved=pattern`);
+  redirect(
+    availabilityRedirectPath(parsed.data.childProfileId, {
+      returnLabel: safeReturnLabel(formData.get("returnLabel")),
+      returnTo: safeReturnPath(formData.get("returnTo")),
+      saved: "pattern",
+    }),
+  );
 }
 
 export async function saveAvailabilityOverrideAction(formData: FormData) {
@@ -91,7 +148,7 @@ export async function saveAvailabilityOverrideAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    availabilityError(childProfileId, "Enter a valid override date.");
+    availabilityError(childProfileId, "Enter a valid override date.", formData);
   }
 
   const householdId = await requireCurrentParentHouseholdId();
@@ -105,10 +162,16 @@ export async function saveAvailabilityOverrideAction(formData: FormData) {
   });
 
   if (error) {
-    availabilityError(parsed.data.childProfileId, error.message);
+    availabilityError(parsed.data.childProfileId, error.message, formData);
   }
 
-  redirect(`/parent/children/${parsed.data.childProfileId}/availability?saved=override`);
+  redirect(
+    availabilityRedirectPath(parsed.data.childProfileId, {
+      returnLabel: safeReturnLabel(formData.get("returnLabel")),
+      returnTo: safeReturnPath(formData.get("returnTo")),
+      saved: "override",
+    }),
+  );
 }
 
 export async function deleteAvailabilityOverrideAction(formData: FormData) {
@@ -119,7 +182,7 @@ export async function deleteAvailabilityOverrideAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    availabilityError(childProfileId, "That override could not be deleted.");
+    availabilityError(childProfileId, "That override could not be deleted.", formData);
   }
 
   await requireCurrentParentHouseholdId();
@@ -129,8 +192,14 @@ export async function deleteAvailabilityOverrideAction(formData: FormData) {
   });
 
   if (error) {
-    availabilityError(parsed.data.childProfileId, error.message);
+    availabilityError(parsed.data.childProfileId, error.message, formData);
   }
 
-  redirect(`/parent/children/${parsed.data.childProfileId}/availability?saved=deleted`);
+  redirect(
+    availabilityRedirectPath(parsed.data.childProfileId, {
+      returnLabel: safeReturnLabel(formData.get("returnLabel")),
+      returnTo: safeReturnPath(formData.get("returnTo")),
+      saved: "deleted",
+    }),
+  );
 }

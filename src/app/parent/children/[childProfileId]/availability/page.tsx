@@ -42,7 +42,7 @@ export default async function ChildAvailabilityPage({
   searchParams,
 }: {
   params: Promise<{ childProfileId: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; returnLabel?: string; returnTo?: string; saved?: string }>;
 }) {
   const [profile, householdId, routeParams, query] = await Promise.all([
     requireCurrentProfile(),
@@ -100,12 +100,22 @@ export default async function ChildAvailabilityPage({
   }
 
   const childName = childUser?.display_name ?? "Child";
+  const returnTo =
+    query.returnTo?.startsWith("/") && !query.returnTo.startsWith("//")
+      ? query.returnTo
+      : "/parent/household";
+  const returnLabel = query.returnLabel?.trim() || "Household";
 
   return (
     <AppShell variant="web">
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
+            <nav aria-label="Breadcrumb">
+              <Link className="text-base font-semibold text-[var(--accent-strong)]" href={returnTo}>
+                Back to {returnLabel}
+              </Link>
+            </nav>
             <h1 className="text-3xl font-semibold leading-tight">{childName}</h1>
             <p className="max-w-xl text-lg text-[var(--muted)]">
               Set when this child is available for chores in this household.
@@ -135,6 +145,8 @@ export default async function ChildAvailabilityPage({
 
           <form action={saveAvailabilityWindowAction} className="grid max-w-xl gap-4">
             <input name="childProfileId" type="hidden" value={childProfile.id} />
+            <input name="returnLabel" type="hidden" value={returnLabel} />
+            <input name="returnTo" type="hidden" value={returnTo} />
 
             <label className="grid gap-2 text-lg font-semibold">
               Anchor date
@@ -195,6 +207,8 @@ export default async function ChildAvailabilityPage({
 
           <form action={saveAvailabilityOverrideAction} className="grid max-w-xl gap-4">
             <input name="childProfileId" type="hidden" value={childProfile.id} />
+            <input name="returnLabel" type="hidden" value={returnLabel} />
+            <input name="returnTo" type="hidden" value={returnTo} />
             <label className="grid gap-2 text-lg font-semibold">
               Date
               <input
@@ -241,6 +255,8 @@ export default async function ChildAvailabilityPage({
                   <form action={deleteAvailabilityOverrideAction}>
                     <input name="childProfileId" type="hidden" value={childProfile.id} />
                     <input name="overrideId" type="hidden" value={override.id} />
+                    <input name="returnLabel" type="hidden" value={returnLabel} />
+                    <input name="returnTo" type="hidden" value={returnTo} />
                     <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold">
                       Delete
                     </button>
