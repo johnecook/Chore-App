@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getInviteSignupContext } from "@/lib/invitations";
@@ -27,6 +28,45 @@ function safeNextPath(rawNext: string | null | undefined) {
   }
 
   return rawNext;
+}
+
+function configuredAppOrigin() {
+  const appUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!appUrl) {
+    return null;
+  }
+
+  return new URL(appUrl).origin;
+}
+
+async function requestAppOrigin() {
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+
+  if (!host) {
+    return "http://localhost:3000";
+  }
+
+  const proto =
+    headerStore.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+
+  return `${proto}://${host}`;
+}
+
+async function createEmailRedirectTo(invitationId?: string, next?: string) {
+  const origin = configuredAppOrigin() ?? await requestAppOrigin();
+  const redirectUrl = new URL("/sign-in", origin);
+
+  if (invitationId) {
+    redirectUrl.searchParams.set("invite", invitationId);
+  }
+
+  if (next) {
+    redirectUrl.searchParams.set("next", safeNextPath(next));
+  }
+
+  return redirectUrl.toString();
 }
 
 function signUpErrorRedirect(message: string, invitationId?: string, next?: string): never {
@@ -132,6 +172,7 @@ export async function signUpAction(formData: FormData) {
         app_role: appRole,
         display_name: parsed.data.displayName,
       },
+      emailRedirectTo: await createEmailRedirectTo(parsed.data.invitationId, parsed.data.next),
     },
   });
 
