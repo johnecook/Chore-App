@@ -25,8 +25,8 @@ function cx(...classes: Array<string | false | null | undefined>) {
 
 export function AppScreen({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-dvh bg-[#222A59] px-4 py-4 text-white">
-      <div className="mx-auto grid min-h-[calc(100dvh-2rem)] max-w-[390px] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_30%_-10%,rgba(174,235,242,0.16),transparent_12rem),linear-gradient(180deg,#061842_0%,#07163A_58%,#04112F_100%)] shadow-[0_26px_80px_rgba(2,7,28,0.42)]">
+    <main className="min-h-dvh bg-[radial-gradient(circle_at_30%_-10%,rgba(174,235,242,0.16),transparent_12rem),linear-gradient(180deg,#061842_0%,#07163A_58%,#04112F_100%)] text-white md:bg-[#222A59] md:px-4 md:py-4">
+      <div className="mx-auto grid min-h-dvh w-full grid-rows-[auto_1fr] overflow-x-hidden bg-[radial-gradient(circle_at_30%_-10%,rgba(174,235,242,0.16),transparent_12rem),linear-gradient(180deg,#061842_0%,#07163A_58%,#04112F_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:min-h-[calc(100dvh-2rem)] md:max-w-[390px] md:grid-rows-[auto_1fr_auto] md:overflow-hidden md:rounded-[24px] md:pb-0 md:shadow-[0_26px_80px_rgba(2,7,28,0.42)]">
         {children}
       </div>
     </main>
@@ -228,7 +228,10 @@ export function BottomTabBar({ active = "Today" }: { active?: "Today" | "History
   ];
 
   return (
-    <nav className="border-t border-white/[0.08] bg-[#06133A]/95 px-3 pb-3 pt-2" aria-label="Primary">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full border-t border-white/[0.08] bg-[#06133A]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 shadow-[0_-18px_48px_rgba(0,0,0,0.28)] md:static md:max-w-none md:pb-3 md:shadow-none"
+      aria-label="Primary"
+    >
       <div className="grid grid-cols-5 gap-1">
         {tabs.map((tab) => (
           <Link
