@@ -48,9 +48,14 @@ export default async function SignInPage({
       title={invite ? `Accept ${invite.role} invite` : "Sign in"}
     >
         {params.error ? (
-          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
-            {params.error}
-          </p>
+          <div className="grid gap-2 rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
+            <p>{params.error}</p>
+            {params.error.toLowerCase().includes("credential") ? (
+              <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/forgot-password">
+                Reset your password
+              </Link>
+            ) : null}
+          </div>
         ) : null}
 
         <form action={signInAction} className="grid gap-4">
