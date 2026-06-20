@@ -35,6 +35,18 @@ function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
 }
 
+function describeMoneyMode(mode: "allowance_plus_bonus" | "none" | "per_chore") {
+  if (mode === "none") {
+    return "No paid chores";
+  }
+
+  if (mode === "allowance_plus_bonus") {
+    return "Allowance plus extra payouts";
+  }
+
+  return "Chores with individual amounts";
+}
+
 function describeAvailabilityPattern(window: {
   cycle_length_days: number;
   available_day_offsets: number[];
@@ -331,50 +343,71 @@ export default async function ParentHouseholdPage({
           <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
             <div className="grid gap-1">
               <h3 className="text-2xl font-semibold leading-tight">{household.name}</h3>
-              <p className="text-base text-[var(--muted)]">{household.timezone}</p>
-              <p className="text-base font-medium">
-                Money mode:{" "}
-                {household.money_mode === "none"
-                  ? "No paid chores"
-                  : household.money_mode === "allowance_plus_bonus"
-                    ? "Allowance plus extra payouts"
-                    : "Chores with individual amounts"}
-              </p>
+              <p className="text-base text-[var(--muted)]">Household settings</p>
+            </div>
+            <div className="grid gap-3 border-t border-[var(--line)] pt-3 md:grid-cols-3">
+              <div className="grid gap-1">
+                <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                  Name
+                </p>
+                <p className="text-lg font-semibold">{household.name}</p>
+              </div>
+              <div className="grid gap-1">
+                <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                  Timezone
+                </p>
+                <p className="text-lg font-semibold">{household.timezone}</p>
+              </div>
+              <div className="grid gap-1">
+                <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                  Money mode
+                </p>
+                <p className="text-lg font-semibold">{describeMoneyMode(household.money_mode)}</p>
+              </div>
             </div>
             {canManageHousehold ? (
-              <form action={updateHouseholdAction} className="grid max-w-md gap-4">
-                <label className="grid gap-2 text-lg font-semibold">
-                  Household name
-                  <input
-                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                    defaultValue={household.name}
-                    name="householdName"
-                    required
-                    type="text"
-                  />
-                </label>
-                <label className="grid gap-2 text-lg font-semibold">
-                  Timezone
-                  <select
-                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                    defaultValue={household.timezone}
-                    name="householdTimezone"
-                    required
+              <details className="grid gap-3 border-t border-[var(--line)] pt-3">
+                <summary className="flex min-h-12 w-fit list-none items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-base font-semibold text-[var(--accent-strong)] [&::-webkit-details-marker]:hidden">
+                  <EditIcon />
+                  Edit details
+                </summary>
+                <form action={updateHouseholdAction} className="grid max-w-md gap-4 pt-3">
+                  <label className="grid gap-2 text-lg font-semibold">
+                    Household name
+                    <input
+                      className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                      defaultValue={household.name}
+                      name="householdName"
+                      required
+                      type="text"
+                    />
+                  </label>
+                  <label className="grid gap-2 text-lg font-semibold">
+                    Timezone
+                    <select
+                      className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                      defaultValue={household.timezone}
+                      name="householdTimezone"
+                      required
+                    >
+                      {timezones.map((timezone) => (
+                        <option key={timezone.value} value={timezone.value}>
+                          {timezone.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="text-base text-[var(--muted)]">
+                    Money mode is kept separate because changing it can affect payout setup and paid chores.
+                  </p>
+                  <button
+                    className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white"
+                    type="submit"
                   >
-                    {timezones.map((timezone) => (
-                      <option key={timezone.value} value={timezone.value}>
-                        {timezone.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <p className="text-base text-[var(--muted)]">
-                  Money mode is kept separate because changing it can affect payout setup and paid chores.
-                </p>
-                <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
-                  Save household
-                </button>
-              </form>
+                    Save household
+                  </button>
+                </form>
+              </details>
             ) : null}
           </div>
         </section>
