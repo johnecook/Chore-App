@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { updateChoreTemplateAction } from "@/app/parent/chores/[templateId]/edit/actions";
 import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields";
@@ -135,10 +136,16 @@ export default async function EditChoreTemplatePage({
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
-            <p className="text-base font-semibold capitalize text-[var(--muted)]">
-              {template.schedule_type.replace("_", "-")} template
+            <Link className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/parent/chores">
+              Back to Chores
+            </Link>
+            <p className="text-base font-semibold text-[var(--muted)]">
+              Saved household chore
             </p>
-            <h1 className="text-3xl font-semibold leading-tight">Edit chore</h1>
+            <h1 className="text-3xl font-semibold leading-tight">Edit {template.title}</h1>
+            <p className="max-w-xl text-lg text-[var(--muted)]">
+              Update this saved chore's schedule, assignment, proof, and value.
+            </p>
           </div>
         </header>
 

@@ -294,10 +294,10 @@ export default async function ParentChoresPage({
         <section aria-labelledby="templates-heading" className="grid gap-5">
           <div className="grid gap-1">
             <h2 id="templates-heading" className="text-xl font-semibold">
-              Templates
+              Your chores
             </h2>
             <p className="text-base text-[var(--muted)]">
-              Review schedule, assignment, and payout details before editing.
+              Saved household chores. Open one to edit its schedule, assignment, proof, or value.
             </p>
           </div>
           {choreTemplates?.length ? (
@@ -317,22 +317,21 @@ export default async function ParentChoresPage({
               ) : null}
             </div>
           ) : (
-            <div className="grid gap-6">
-              <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
-                <div className="grid gap-1">
-                  <h3 className="text-xl font-semibold">No household chores yet</h3>
-                  <p className="text-lg text-[var(--muted)]">
-                    Start with a common chore below or create one from scratch.
-                  </p>
-                </div>
-                <ButtonLink className="w-fit px-4 py-2 text-base" href="/parent/chores/new">
-                  Create custom chore
-                </ButtonLink>
+            <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
+              <div className="grid gap-1">
+                <h3 className="text-xl font-semibold">No saved chores yet</h3>
+                <p className="text-lg text-[var(--muted)]">
+                  Create one from scratch or start from a starter chore below.
+                </p>
               </div>
-              {presetsByCategory.length ? <CommonChorePresets presetsByCategory={presetsByCategory} /> : null}
+              <ButtonLink className="w-fit px-4 py-2 text-base" href="/parent/chores/new">
+                Create from scratch
+              </ButtonLink>
             </div>
           )}
         </section>
+
+        {presetsByCategory.length ? <CommonChorePresets presetsByCategory={presetsByCategory} /> : null}
     </AppShell>
   );
 }
@@ -375,19 +374,27 @@ function CommonChorePresets({
   }>;
 }) {
   return (
-    <section aria-labelledby="common-chores-heading" className="grid gap-4">
+    <section aria-labelledby="starter-chores-heading" className="grid gap-4">
       <div className="grid gap-1">
-        <h3 id="common-chores-heading" className="text-xl font-semibold">
-          Common chores
-        </h3>
+        <h2 id="starter-chores-heading" className="text-xl font-semibold">
+          Starter chores
+        </h2>
         <p className="text-base text-[var(--muted)]">
-          Choose a starter chore, then adjust schedule, assignment, proof, and value before saving.
+          Pick a starter to create a new chore draft, then adjust and save it for your household.
         </p>
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
+        <div className="grid gap-1">
+          <h3 className="text-lg font-semibold">
+            Choose a starting point
+          </h3>
+          <p className="text-base text-[var(--muted)]">
+            These are not saved chores yet. Selecting one opens the chore creator with suggested defaults.
+          </p>
+        </div>
         {presetsByCategory.map((category) => (
           <details
-            className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+            className="grid rounded-2xl border border-[var(--line)] bg-[var(--background)] p-4"
             key={category.value}
             open={category.value === "kitchen" || category.value === "bedroom"}
           >
@@ -417,6 +424,9 @@ function CommonChorePresets({
                       ),
                     )}
                   </div>
+                  <span className="text-base font-semibold text-[var(--accent-strong)]">
+                    Create from this starter
+                  </span>
                 </Link>
               ))}
             </div>

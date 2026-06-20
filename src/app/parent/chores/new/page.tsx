@@ -28,6 +28,36 @@ function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
 }
 
+function scheduleTypeLabel(scheduleType: Database["public"]["Enums"]["chore_schedule_type"]) {
+  if (scheduleType === "daily") {
+    return "Daily";
+  }
+
+  if (scheduleType === "weekly") {
+    return "Weekly";
+  }
+
+  if (scheduleType === "interval") {
+    return "Every few days";
+  }
+
+  return "Specific date";
+}
+
+function presetValueLabel(preset: ChorePreset, moneyFeaturesEnabled: boolean) {
+  if (preset.suggested_value_model === "fixed") {
+    return moneyFeaturesEnabled
+      ? `$${dollarsFromCents(preset.suggested_amount_cents)}`
+      : "Unpaid in chores-only mode";
+  }
+
+  if (preset.suggested_value_model === "allowance_included") {
+    return "Allowance included";
+  }
+
+  return "Unpaid";
+}
+
 export default async function NewChorePage({
   searchParams,
 }: {
@@ -146,9 +176,16 @@ export default async function NewChorePage({
         <header className="grid gap-4">
           <ParentNav />
           <div className="grid gap-2">
-            <h1 className="text-3xl font-semibold leading-tight">Add chore</h1>
+            <a className="w-fit text-base font-semibold text-[var(--accent-strong)]" href="/parent/chores">
+              Back to Chores
+            </a>
+            <h1 className="text-3xl font-semibold leading-tight">
+              {selectedPreset ? `Create from ${selectedPreset.title}` : "Create custom chore"}
+            </h1>
             <p className="max-w-xl text-lg text-[var(--muted)]">
-              Create a recurring chore or a chore for a specific date.
+              {selectedPreset
+                ? "Review the starter defaults, adjust what your household needs, then save it as a chore."
+                : "Create a recurring chore or a chore for a specific date."}
             </p>
           </div>
         </header>
@@ -161,58 +198,41 @@ export default async function NewChorePage({
 
         {children.length ? (
           <div className="grid gap-6">
-            {presetsByCategory.length ? (
-              <section className="grid gap-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-semibold">Common chores</h2>
-                  {selectedPreset ? (
-                    <a
-                      className="text-base font-semibold text-[var(--accent-strong)]"
-                      href="/parent/chores/new"
-                    >
-                      Start from scratch
-                    </a>
-                  ) : null}
+            {selectedPreset ? (
+              <section
+                aria-label="Selected starter chore"
+                className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="grid gap-1">
+                    <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                      Starter chore
+                    </p>
+                    <h2 className="text-xl font-semibold">{selectedPreset.title}</h2>
+                    {selectedPreset.description ? (
+                      <p className="max-w-2xl text-base text-[var(--muted)]">
+                        {selectedPreset.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <a
+                    className="inline-flex min-h-10 items-center rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-base font-semibold text-[var(--accent-strong)]"
+                    href="/parent/chores/new"
+                  >
+                    Start from scratch
+                  </a>
                 </div>
-                <div className="grid gap-3">
-                  {presetsByCategory.map((category) => (
-                    <details
-                      className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
-                      key={category.value}
-                      open={category.presets.some((preset) => preset.id === selectedPreset?.id)}
-                    >
-                      <summary className="cursor-pointer text-lg font-semibold">
-                        {category.label}
-                      </summary>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {category.presets.map((preset) => (
-                          <a
-                            className={`grid gap-2 rounded-2xl border p-4 ${
-                              preset.id === selectedPreset?.id
-                                ? "border-[var(--accent)] bg-[var(--background)]"
-                                : "border-[var(--line)] bg-[var(--surface-elevated)]"
-                            }`}
-                            href={`/parent/chores/new?preset=${preset.id}`}
-                            key={preset.id}
-                          >
-                            <h3 className="text-lg font-semibold">{preset.title}</h3>
-                            <p className="text-base text-[var(--muted)]">
-                              {preset.description}
-                            </p>
-                            <p className="text-base font-semibold text-[var(--accent-strong)]">
-                              {preset.suggested_value_model === "fixed"
-                                ? moneyFeaturesEnabled
-                                  ? `$${dollarsFromCents(preset.suggested_amount_cents)}`
-                                  : "Unpaid in chores-only mode"
-                                : preset.suggested_value_model === "allowance_included"
-                                  ? "Allowance included"
-                                  : "Unpaid"}
-                            </p>
-                          </a>
-                        ))}
-                      </div>
-                    </details>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {[scheduleTypeLabel(selectedPreset.suggested_schedule_type), presetValueLabel(selectedPreset, moneyFeaturesEnabled)].map(
+                    (item) => (
+                      <span
+                        className="inline-flex min-h-8 items-center rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold leading-none text-[var(--accent-strong)]"
+                        key={item}
+                      >
+                        {item}
+                      </span>
+                    ),
+                  )}
                 </div>
               </section>
             ) : null}
@@ -241,6 +261,14 @@ export default async function NewChorePage({
                 submitLabel="Create chore"
               />
             </form>
+
+            {presetsByCategory.length ? (
+              <StarterChoreChooser
+                moneyFeaturesEnabled={moneyFeaturesEnabled}
+                presetsByCategory={presetsByCategory}
+                selectedPresetId={selectedPreset?.id}
+              />
+            ) : null}
           </div>
         ) : (
           <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4 text-lg text-[var(--muted)]">
@@ -248,5 +276,73 @@ export default async function NewChorePage({
           </p>
         )}
     </AppShell>
+  );
+}
+
+function StarterChoreChooser({
+  moneyFeaturesEnabled,
+  presetsByCategory,
+  selectedPresetId,
+}: {
+  moneyFeaturesEnabled: boolean;
+  presetsByCategory: Array<{
+    label: string;
+    presets: ChorePreset[];
+    value: Database["public"]["Enums"]["chore_template_preset_category"];
+  }>;
+  selectedPresetId?: string;
+}) {
+  return (
+    <details className="grid rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4">
+      <summary className="cursor-pointer text-lg font-semibold">
+        {selectedPresetId ? "Change starter chore" : "Use a starter chore"}
+      </summary>
+      <div className="mt-4 grid gap-4">
+        <p className="text-base text-[var(--muted)]">
+          Starter chores create a draft with suggested defaults. Your current edits are not saved until you press Create chore.
+        </p>
+        {presetsByCategory.map((category) => (
+          <details
+            className="grid rounded-2xl border border-[var(--line)] bg-[var(--background)] p-4"
+            key={category.value}
+            open={category.presets.some((preset) => preset.id === selectedPresetId)}
+          >
+            <summary className="cursor-pointer text-lg font-semibold">
+              {category.label} ({category.presets.length})
+            </summary>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {category.presets.map((preset) => (
+                <a
+                  className={`grid gap-2 rounded-2xl border p-4 ${
+                    preset.id === selectedPresetId
+                      ? "border-[var(--accent-strong)] bg-white/8"
+                      : "border-[var(--line)] bg-[var(--surface-elevated)]"
+                  }`}
+                  href={`/parent/chores/new?preset=${preset.id}`}
+                  key={preset.id}
+                >
+                  <h3 className="text-lg font-semibold">{preset.title}</h3>
+                  {preset.description ? (
+                    <p className="text-base text-[var(--muted)]">{preset.description}</p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {[scheduleTypeLabel(preset.suggested_schedule_type), presetValueLabel(preset, moneyFeaturesEnabled)].map(
+                      (item) => (
+                        <span
+                          className="inline-flex min-h-8 items-center rounded-xl border border-[var(--line)] px-2 py-1 text-sm font-semibold leading-none text-[var(--accent-strong)]"
+                          key={item}
+                        >
+                          {item}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </details>
   );
 }

@@ -340,7 +340,8 @@ export function ChoreTemplateFormFields({
         </label>
       </section>
 
-      <div className="flex flex-wrap gap-3">
+      <div aria-hidden="true" className="h-24" />
+      <div className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl flex-wrap gap-3 rounded-2xl border border-[var(--line)] bg-[rgba(8,24,66,0.96)] p-2 shadow-[0_18px_54px_rgba(1,6,22,0.42)] backdrop-blur">
         <button className="min-h-12 rounded-2xl bg-[var(--accent)] px-5 py-3 text-lg font-semibold text-white">
           {submitLabel}
         </button>
