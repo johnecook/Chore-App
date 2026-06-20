@@ -51,28 +51,34 @@ export function createChoreTemplate(
     checklistItems?: string[];
   },
 ) {
+  const rpcArgs = {
+    target_household_id: params.householdId,
+    chore_title: params.title,
+    chore_description: params.description ?? null,
+    chore_schedule_type: params.scheduleType,
+    chore_start_date: params.startDate,
+    chore_weekly_weekdays: params.weeklyWeekdays ?? null,
+    chore_interval_days: params.intervalDays ?? null,
+    chore_one_off_date: params.oneOffDate ?? null,
+    chore_due_time_start: params.dueTimeStart ?? null,
+    chore_due_time_end: params.dueTimeEnd ?? null,
+    chore_assignment_mode: params.assignmentMode,
+    chore_value_model: params.valueModel,
+    chore_amount_cents: params.amountCents,
+    chore_photo_required: params.photoRequired,
+    chore_approval_required: params.approvalRequired,
+    selected_child_profile_ids: params.selectedChildProfileIds,
+    chore_checklist_items: params.checklistItems ?? [],
+    ...(params.assignmentMode === "rotation"
+      ? {
+          chore_rotation_cadence: params.rotationCadence ?? null,
+          chore_rotation_child_scope: params.rotationChildScope ?? null,
+        }
+      : {}),
+  };
+
   return unwrapRpcId(
-    client.rpc("create_chore_template", {
-      target_household_id: params.householdId,
-      chore_title: params.title,
-      chore_description: params.description ?? null,
-      chore_schedule_type: params.scheduleType,
-      chore_start_date: params.startDate,
-      chore_weekly_weekdays: params.weeklyWeekdays ?? null,
-      chore_interval_days: params.intervalDays ?? null,
-      chore_one_off_date: params.oneOffDate ?? null,
-      chore_due_time_start: params.dueTimeStart ?? null,
-      chore_due_time_end: params.dueTimeEnd ?? null,
-      chore_assignment_mode: params.assignmentMode,
-      chore_value_model: params.valueModel,
-      chore_amount_cents: params.amountCents,
-      chore_photo_required: params.photoRequired,
-      chore_approval_required: params.approvalRequired,
-      selected_child_profile_ids: params.selectedChildProfileIds,
-      chore_checklist_items: params.checklistItems ?? [],
-      chore_rotation_cadence: params.rotationCadence ?? null,
-      chore_rotation_child_scope: params.rotationChildScope ?? null,
-    }),
+    client.rpc("create_chore_template", rpcArgs),
   );
 }
 
@@ -174,27 +180,33 @@ export async function updateChoreTemplateBasics(
     }
   }
 
+  const updateFields = {
+    title: params.title,
+    description: params.description ?? null,
+    schedule_type: params.scheduleType,
+    start_date: params.startDate,
+    weekly_weekdays: params.weeklyWeekdays ?? null,
+    interval_days: params.intervalDays ?? null,
+    one_off_date: params.oneOffDate ?? null,
+    due_time_start: params.dueTimeStart ?? null,
+    due_time_end: params.dueTimeEnd ?? null,
+    assignment_mode: params.assignmentMode,
+    value_model: params.valueModel,
+    amount_cents: params.amountCents,
+    photo_required: params.photoRequired,
+    approval_required: params.approvalRequired,
+    ...(params.assignmentMode === "rotation"
+      ? {
+          rotation_cadence: params.rotationCadence,
+          rotation_child_scope: params.rotationChildScope,
+          rotation_anchor_date: params.startDate,
+        }
+      : {}),
+  };
+
   const { data, error } = await client
     .from("chore_templates")
-    .update({
-      title: params.title,
-      description: params.description ?? null,
-      schedule_type: params.scheduleType,
-      start_date: params.startDate,
-      weekly_weekdays: params.weeklyWeekdays ?? null,
-      interval_days: params.intervalDays ?? null,
-      one_off_date: params.oneOffDate ?? null,
-      due_time_start: params.dueTimeStart ?? null,
-      due_time_end: params.dueTimeEnd ?? null,
-      assignment_mode: params.assignmentMode,
-      rotation_cadence: params.assignmentMode === "rotation" ? params.rotationCadence : null,
-      rotation_child_scope: params.assignmentMode === "rotation" ? params.rotationChildScope : null,
-      rotation_anchor_date: params.assignmentMode === "rotation" ? params.startDate : null,
-      value_model: params.valueModel,
-      amount_cents: params.amountCents,
-      photo_required: params.photoRequired,
-      approval_required: params.approvalRequired,
-    })
+    .update(updateFields)
     .eq("id", params.templateId)
     .eq("household_id", params.householdId)
     .eq("active", true)

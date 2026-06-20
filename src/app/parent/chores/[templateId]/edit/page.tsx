@@ -46,7 +46,7 @@ export default async function EditChoreTemplatePage({
       supabase
         .from("chore_templates")
         .select(
-          "id, title, description, schedule_type, start_date, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, rotation_cadence, rotation_child_scope, rotation_anchor_date, value_model, amount_cents, photo_required, approval_required, active",
+          "id, title, description, schedule_type, start_date, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, value_model, amount_cents, photo_required, approval_required, active",
         )
         .eq("id", routeParams.templateId)
         .eq("household_id", householdId)
@@ -177,8 +177,8 @@ export default async function EditChoreTemplatePage({
                 intervalDays: template.interval_days,
                 oneOffDate: template.one_off_date ?? "",
                 photoRequired: template.photo_required,
-                rotationCadence: template.rotation_cadence,
-                rotationChildScope: template.rotation_child_scope,
+                rotationCadence: null,
+                rotationChildScope: null,
                 scheduleType: template.schedule_type,
                 selectedChildProfileIds: [...selectedChildProfileIds],
                 startDate: template.start_date,
