@@ -251,6 +251,8 @@ export default async function NewChorePage({
                   intervalDays: selectedPreset?.suggested_interval_days ?? null,
                   oneOffDate: defaultOneOffDate,
                   photoRequired: selectedPreset?.suggested_photo_required ?? true,
+                  rotationCadence: "weekly",
+                  rotationChildScope: "all_children",
                   scheduleType: defaultScheduleType,
                   startDate: today,
                   title: selectedPreset?.title ?? "",

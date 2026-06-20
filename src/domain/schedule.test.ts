@@ -54,6 +54,83 @@ describe("schedule generation", () => {
     expect(instances[0]?.upForGrabsSlot).toBe(true);
   });
 
+  it("rotates assigned children by week", () => {
+    const instances = generateChoreInstanceIdentities({
+      template: {
+        templateId: "template-rotation",
+        earningHouseholdId: "dad-household",
+        scheduleType: "daily",
+        assignmentMode: "rotation",
+        assigneeIds: ["will", "hollis"],
+        rotationCadence: "weekly",
+        rotationChildScope: "selected_children",
+        rotationAnchorDate: "2026-06-01",
+        startDate: "2026-06-01",
+      },
+      rangeStart: "2026-06-01",
+      rangeEnd: "2026-06-08",
+      availabilityByChildId: {
+        will: {
+          householdId: "dad-household",
+          anchorDate: "2026-06-01",
+          cycleLengthDays: 1,
+          availableDayOffsets: [0],
+        },
+        hollis: {
+          householdId: "dad-household",
+          anchorDate: "2026-06-01",
+          cycleLengthDays: 1,
+          availableDayOffsets: [0],
+        },
+      },
+    });
+
+    expect(instances.map((instance) => instance.assigneeId)).toEqual([
+      "will",
+      "will",
+      "will",
+      "will",
+      "will",
+      "will",
+      "will",
+      "hollis",
+    ]);
+  });
+
+  it("uses the next available child in a rotation period", () => {
+    const instances = generateChoreInstanceIdentities({
+      template: {
+        templateId: "template-rotation-availability",
+        earningHouseholdId: "dad-household",
+        scheduleType: "daily",
+        assignmentMode: "rotation",
+        assigneeIds: ["will", "hollis"],
+        rotationCadence: "weekly",
+        rotationChildScope: "selected_children",
+        rotationAnchorDate: "2026-06-01",
+        startDate: "2026-06-01",
+      },
+      rangeStart: "2026-06-01",
+      rangeEnd: "2026-06-01",
+      availabilityByChildId: {
+        will: {
+          householdId: "dad-household",
+          anchorDate: "2026-06-02",
+          cycleLengthDays: 14,
+          availableDayOffsets: [0, 1, 2, 3, 4, 5, 6],
+        },
+        hollis: {
+          householdId: "dad-household",
+          anchorDate: "2026-06-01",
+          cycleLengthDays: 1,
+          availableDayOffsets: [0],
+        },
+      },
+    });
+
+    expect(instances.map((instance) => instance.assigneeId)).toEqual(["hollis"]);
+  });
+
   it("produces stable idempotency keys", () => {
     const [instance] = generateChoreInstanceIdentities({
       template: {

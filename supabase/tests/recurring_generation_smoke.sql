@@ -135,10 +135,10 @@ begin
   )
   returning id into weekly_template_id;
 
-  insert into public.chore_template_assignees (template_id, child_profile_id)
+  insert into public.chore_template_assignees (template_id, child_profile_id, position)
   values
-    (weekly_template_id, child_one_profile_id),
-    (weekly_template_id, child_two_profile_id);
+    (weekly_template_id, child_one_profile_id, 1),
+    (weekly_template_id, child_two_profile_id, 2);
 
   insert into public.chore_templates (
     household_id,

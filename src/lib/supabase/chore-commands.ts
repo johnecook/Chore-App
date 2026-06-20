@@ -41,6 +41,8 @@ export function createChoreTemplate(
     dueTimeStart?: string | null;
     dueTimeEnd?: string | null;
     assignmentMode: Database["public"]["Enums"]["chore_assignment_mode"];
+    rotationCadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+    rotationChildScope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
     valueModel: Database["public"]["Enums"]["chore_value_model"];
     amountCents: number;
     photoRequired: boolean;
@@ -68,6 +70,8 @@ export function createChoreTemplate(
       chore_approval_required: params.approvalRequired,
       selected_child_profile_ids: params.selectedChildProfileIds,
       chore_checklist_items: params.checklistItems ?? [],
+      chore_rotation_cadence: params.rotationCadence ?? null,
+      chore_rotation_child_scope: params.rotationChildScope ?? null,
     }),
   );
 }
@@ -141,6 +145,8 @@ export async function updateChoreTemplateBasics(
     dueTimeStart?: string | null;
     dueTimeEnd?: string | null;
     assignmentMode: Database["public"]["Enums"]["chore_assignment_mode"];
+    rotationCadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+    rotationChildScope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
     valueModel: Database["public"]["Enums"]["chore_value_model"];
     amountCents: number;
     photoRequired: boolean;
@@ -149,7 +155,10 @@ export async function updateChoreTemplateBasics(
     checklistItems: string[];
   },
 ) {
-  if (params.assignmentMode === "selected_children") {
+  if (
+    params.assignmentMode === "selected_children" ||
+    (params.assignmentMode === "rotation" && params.rotationChildScope === "selected_children")
+  ) {
     const { count, error: childCountError } = await client
       .from("child_profiles")
       .select("id", { count: "exact", head: true })
@@ -178,6 +187,9 @@ export async function updateChoreTemplateBasics(
       due_time_start: params.dueTimeStart ?? null,
       due_time_end: params.dueTimeEnd ?? null,
       assignment_mode: params.assignmentMode,
+      rotation_cadence: params.assignmentMode === "rotation" ? params.rotationCadence : null,
+      rotation_child_scope: params.assignmentMode === "rotation" ? params.rotationChildScope : null,
+      rotation_anchor_date: params.assignmentMode === "rotation" ? params.startDate : null,
       value_model: params.valueModel,
       amount_cents: params.amountCents,
       photo_required: params.photoRequired,
@@ -235,11 +247,15 @@ export async function updateChoreTemplateBasics(
     }
   }
 
-  if (params.assignmentMode === "selected_children") {
+  if (
+    params.assignmentMode === "selected_children" ||
+    (params.assignmentMode === "rotation" && params.rotationChildScope === "selected_children")
+  ) {
     const { error: insertAssigneesError } = await client.from("chore_template_assignees").insert(
-      params.selectedChildProfileIds.map((childProfileId) => ({
+      params.selectedChildProfileIds.map((childProfileId, index) => ({
         template_id: data.id,
         child_profile_id: childProfileId,
+        position: index + 1,
       })),
     );
 

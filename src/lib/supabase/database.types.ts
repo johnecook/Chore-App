@@ -268,6 +268,9 @@ export type Database = {
           due_time_start: string | null;
           due_time_end: string | null;
           assignment_mode: Database["public"]["Enums"]["chore_assignment_mode"];
+          rotation_cadence: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+          rotation_child_scope: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+          rotation_anchor_date: string | null;
           value_model: Database["public"]["Enums"]["chore_value_model"];
           amount_cents: number;
           photo_required: boolean;
@@ -291,6 +294,9 @@ export type Database = {
           due_time_start?: string | null;
           due_time_end?: string | null;
           assignment_mode: Database["public"]["Enums"]["chore_assignment_mode"];
+          rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+          rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+          rotation_anchor_date?: string | null;
           value_model: Database["public"]["Enums"]["chore_value_model"];
           amount_cents?: number;
           photo_required?: boolean;
@@ -314,6 +320,9 @@ export type Database = {
           due_time_start?: string | null;
           due_time_end?: string | null;
           assignment_mode?: Database["public"]["Enums"]["chore_assignment_mode"];
+          rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+          rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+          rotation_anchor_date?: string | null;
           value_model?: Database["public"]["Enums"]["chore_value_model"];
           amount_cents?: number;
           photo_required?: boolean;
@@ -328,16 +337,19 @@ export type Database = {
         Row: {
           template_id: string;
           child_profile_id: string;
+          position: number;
           created_at: string;
         };
         Insert: {
           template_id: string;
           child_profile_id: string;
+          position: number;
           created_at?: string;
         };
         Update: {
           template_id?: string;
           child_profile_id?: string;
+          position?: number;
           created_at?: string;
         };
         Relationships: [];
@@ -818,6 +830,8 @@ export type Database = {
           chore_approval_required?: boolean;
           selected_child_profile_ids?: string[];
           chore_checklist_items?: string[];
+          chore_rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+          chore_rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
         };
         Returns: string;
       };
@@ -1006,8 +1020,10 @@ export type Database = {
     Enums: {
       app_role: "parent" | "child";
       approval_event_type: "approved" | "rejected" | "reopened";
-      chore_assignment_mode: "selected_children" | "all_eligible_children" | "up_for_grabs";
+      chore_assignment_mode: "selected_children" | "all_eligible_children" | "up_for_grabs" | "rotation";
       chore_instance_status: "available" | "assigned" | "submitted" | "approved" | "rejected" | "expired";
+      chore_rotation_cadence: "daily" | "weekly" | "monthly";
+      chore_rotation_child_scope: "all_children" | "selected_children";
       chore_schedule_type: "daily" | "weekly" | "interval" | "one_off";
       chore_template_preset_category:
         | "kitchen"

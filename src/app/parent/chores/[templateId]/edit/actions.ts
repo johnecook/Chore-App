@@ -7,7 +7,9 @@ import { updateChoreTemplateBasics } from "@/lib/supabase/chore-commands";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const scheduleTypeSchema = z.enum(["daily", "weekly", "interval", "one_off"]);
-const assignmentModeSchema = z.enum(["selected_children", "all_eligible_children", "up_for_grabs"]);
+const assignmentModeSchema = z.enum(["selected_children", "all_eligible_children", "up_for_grabs", "rotation"]);
+const rotationCadenceSchema = z.enum(["daily", "weekly", "monthly"]);
+const rotationChildScopeSchema = z.enum(["all_children", "selected_children"]);
 const valueModelSchema = z.enum(["fixed", "allowance_included", "unpaid"]);
 
 const editChoreTemplateFormSchema = z
@@ -23,6 +25,8 @@ const editChoreTemplateFormSchema = z
     dueTimeStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     dueTimeEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     assignmentMode: assignmentModeSchema,
+    rotationCadence: rotationCadenceSchema.optional(),
+    rotationChildScope: rotationChildScopeSchema.optional(),
     valueModel: valueModelSchema,
     amountDollars: z.coerce.number().min(0).max(9999).optional(),
     selectedChildProfileIds: z.array(z.uuid()),
@@ -60,6 +64,26 @@ const editChoreTemplateFormSchema = z
         code: "custom",
         path: ["selectedChildProfileIds"],
         message: "Choose at least one child.",
+      });
+    }
+
+    if (data.assignmentMode === "rotation" && (!data.rotationCadence || !data.rotationChildScope)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["assignmentMode"],
+        message: "Choose rotation cadence and children.",
+      });
+    }
+
+    if (
+      data.assignmentMode === "rotation" &&
+      data.rotationChildScope === "selected_children" &&
+      data.selectedChildProfileIds.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["selectedChildProfileIds"],
+        message: "Choose at least one child for this rotation.",
       });
     }
 
@@ -102,6 +126,8 @@ export async function updateChoreTemplateAction(formData: FormData) {
     dueTimeStart: optionalString(formData.get("dueTimeStart")),
     dueTimeEnd: optionalString(formData.get("dueTimeEnd")),
     assignmentMode: formData.get("assignmentMode"),
+    rotationCadence: optionalString(formData.get("rotationCadence")),
+    rotationChildScope: optionalString(formData.get("rotationChildScope")),
     valueModel: formData.get("valueModel"),
     amountDollars: optionalString(formData.get("amountDollars")),
     selectedChildProfileIds: formData.getAll("selectedChildProfileIds"),
@@ -165,12 +191,17 @@ export async function updateChoreTemplateAction(formData: FormData) {
       dueTimeStart: parsed.data.dueTimeStart ?? null,
       dueTimeEnd: parsed.data.dueTimeEnd ?? null,
       assignmentMode: parsed.data.assignmentMode,
+      rotationCadence: parsed.data.assignmentMode === "rotation" ? parsed.data.rotationCadence : null,
+      rotationChildScope: parsed.data.assignmentMode === "rotation" ? parsed.data.rotationChildScope : null,
       valueModel: parsed.data.valueModel,
       amountCents,
       photoRequired: parsed.data.photoRequired,
       approvalRequired: parsed.data.approvalRequired,
       selectedChildProfileIds:
-        parsed.data.assignmentMode === "selected_children" ? parsed.data.selectedChildProfileIds : [],
+        parsed.data.assignmentMode === "selected_children" ||
+        (parsed.data.assignmentMode === "rotation" && parsed.data.rotationChildScope === "selected_children")
+          ? parsed.data.selectedChildProfileIds
+          : [],
       checklistItems: parsed.data.checklistItems,
     });
   } catch (error) {

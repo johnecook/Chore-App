@@ -5,6 +5,8 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type ScheduleType = Database["public"]["Enums"]["chore_schedule_type"];
 type AssignmentMode = Database["public"]["Enums"]["chore_assignment_mode"];
+type RotationCadence = Database["public"]["Enums"]["chore_rotation_cadence"];
+type RotationChildScope = Database["public"]["Enums"]["chore_rotation_child_scope"];
 type ValueModel = Database["public"]["Enums"]["chore_value_model"];
 
 type ChildOption = {
@@ -23,6 +25,8 @@ type ChoreTemplateFormDefaults = {
   intervalDays?: number | null;
   oneOffDate?: string;
   photoRequired: boolean;
+  rotationCadence?: RotationCadence | null;
+  rotationChildScope?: RotationChildScope | null;
   scheduleType: ScheduleType;
   selectedChildProfileIds?: string[];
   startDate: string;
@@ -56,6 +60,9 @@ export function ChoreTemplateFormFields({
 }) {
   const [scheduleType, setScheduleType] = useState(defaults.scheduleType);
   const [assignmentMode, setAssignmentMode] = useState(defaults.assignmentMode);
+  const [rotationChildScope, setRotationChildScope] = useState<RotationChildScope>(
+    defaults.rotationChildScope ?? "all_children",
+  );
   const [valueModel, setValueModel] = useState(defaults.valueModel);
   const [checklistItems, setChecklistItems] = useState(() =>
     defaults.checklistItems?.length ? defaults.checklistItems : [""],
@@ -242,8 +249,73 @@ export function ChoreTemplateFormFields({
             <option value="selected_children">Selected children</option>
             <option value="all_eligible_children">All eligible children</option>
             <option value="up_for_grabs">Up for grabs</option>
+            <option value="rotation">Rotate</option>
           </select>
         </label>
+        {assignmentMode === "rotation" ? (
+          <div className="grid gap-4 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-3">
+            <label className="grid gap-2 text-base font-semibold">
+              Rotation cadence
+              <select
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                defaultValue={defaults.rotationCadence ?? "weekly"}
+                name="rotationCadence"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <fieldset className="grid gap-3">
+              <legend className="text-base font-semibold">Children in rotation</legend>
+              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
+                <input
+                  checked={rotationChildScope === "all_children"}
+                  name="rotationChildScope"
+                  onChange={() => setRotationChildScope("all_children")}
+                  type="radio"
+                  value="all_children"
+                />
+                All children
+              </label>
+              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-medium">
+                <input
+                  checked={rotationChildScope === "selected_children"}
+                  name="rotationChildScope"
+                  onChange={() => setRotationChildScope("selected_children")}
+                  type="radio"
+                  value="selected_children"
+                />
+                Select children
+              </label>
+            </fieldset>
+            {rotationChildScope === "selected_children" ? (
+              <fieldset className="grid gap-3">
+                <legend className="text-base font-semibold">Selected rotation children</legend>
+                <div className="grid gap-2">
+                  {children.map((child) => (
+                    <label
+                      className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-3 py-2 text-lg font-medium"
+                      key={child.id}
+                    >
+                      <input
+                        className="size-5"
+                        defaultChecked={selectedChildProfileIds.has(child.id)}
+                        name="selectedChildProfileIds"
+                        type="checkbox"
+                        value={child.id}
+                      />
+                      {child.name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
+            <p className="text-base text-[var(--muted)]">
+              Rotation starts from the chore start date and skips unavailable children.
+            </p>
+          </div>
+        ) : null}
         {assignmentMode === "selected_children" ? (
           <fieldset className="grid gap-3">
             <legend className="text-lg font-semibold">Selected children</legend>

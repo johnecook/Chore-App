@@ -21,6 +21,8 @@ type ChoreTemplate = Pick<
   | "interval_days"
   | "one_off_date"
   | "photo_required"
+  | "rotation_cadence"
+  | "rotation_child_scope"
   | "schedule_type"
   | "title"
   | "value_model"
@@ -134,7 +136,7 @@ function dueWindowLabel(template: { due_time_end: string | null; due_time_start:
   return "No due window";
 }
 
-function assignmentLabel(mode: "all_eligible_children" | "selected_children" | "up_for_grabs") {
+function assignmentLabel(mode: "all_eligible_children" | "selected_children" | "up_for_grabs" | "rotation") {
   if (mode === "all_eligible_children") {
     return "Every eligible child";
   }
@@ -143,7 +145,23 @@ function assignmentLabel(mode: "all_eligible_children" | "selected_children" | "
     return "Up for grabs";
   }
 
+  if (mode === "rotation") {
+    return "Rotating children";
+  }
+
   return "Selected children";
+}
+
+function rotationCadenceLabel(cadence: Database["public"]["Enums"]["chore_rotation_cadence"] | null) {
+  if (cadence === "daily") {
+    return "Daily rotation";
+  }
+
+  if (cadence === "monthly") {
+    return "Monthly rotation";
+  }
+
+  return "Weekly rotation";
 }
 
 function valueLabel(template: {
@@ -190,7 +208,7 @@ export default async function ParentChoresPage({
   const { data: choreTemplates, error: templateError } = await supabase
     .from("chore_templates")
     .select(
-      "id, title, schedule_type, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, value_model, amount_cents, photo_required, approval_required, active, created_at",
+      "id, title, schedule_type, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, rotation_cadence, rotation_child_scope, value_model, amount_cents, photo_required, approval_required, active, created_at",
     )
     .eq("household_id", householdId)
     .order("active", { ascending: false })
@@ -464,6 +482,7 @@ function TemplateGroup({
             scheduleLabel(template),
             dueWindowLabel(template),
             assignmentLabel(template.assignment_mode),
+            template.assignment_mode === "rotation" ? rotationCadenceLabel(template.rotation_cadence) : null,
             valueLabel(template),
             checklistCount > 0
               ? `${checklistCount} checklist item${checklistCount === 1 ? "" : "s"}`

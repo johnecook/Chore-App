@@ -6,7 +6,11 @@ export interface HouseholdSettings {
   moneyFeaturesEnabled: boolean;
 }
 
-export type AssignmentMode = "selected_children" | "all_eligible_children" | "up_for_grabs";
+export type AssignmentMode = "selected_children" | "all_eligible_children" | "up_for_grabs" | "rotation";
+
+export type RotationCadence = "daily" | "weekly" | "monthly";
+
+export type RotationChildScope = "all_children" | "selected_children";
 
 export type ChoreValueModel = "fixed" | "allowance_included" | "unpaid";
 
