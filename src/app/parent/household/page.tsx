@@ -35,6 +35,50 @@ function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
 }
 
+function describeAvailabilityPattern(window: {
+  cycle_length_days: number;
+  available_day_offsets: number[];
+} | null) {
+  if (!window) {
+    return "No pattern set";
+  }
+
+  if (window.cycle_length_days === 1 && window.available_day_offsets.includes(0)) {
+    return "Every day";
+  }
+
+  if (
+    window.cycle_length_days === 14 &&
+    window.available_day_offsets.length === 7 &&
+    window.available_day_offsets.every((offset) => offset >= 0 && offset <= 6)
+  ) {
+    return "Week on, week off";
+  }
+
+  return `${window.available_day_offsets.length} of ${window.cycle_length_days} days`;
+}
+
+function EditIcon() {
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M5 19h4l10-10a2.8 2.8 0 0 0-4-4L5 15v4Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="m14 6 4 4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 function CreateInviteSection() {
   return (
     <section aria-labelledby="create-invite-heading" className="grid gap-3">
@@ -199,6 +243,19 @@ export default async function ParentHouseholdPage({
     throw new Error(childProfileError.message);
   }
 
+  const childProfileIds = childProfiles?.map((childProfile) => childProfile.id) ?? [];
+  const { data: availabilityWindows, error: availabilityWindowError } = childProfileIds.length
+    ? await supabase
+        .from("child_household_availability_windows")
+        .select("child_profile_id, cycle_length_days, available_day_offsets")
+        .eq("household_id", householdId)
+        .in("child_profile_id", childProfileIds)
+    : { data: [], error: null };
+
+  if (availabilityWindowError) {
+    throw new Error(availabilityWindowError.message);
+  }
+
   const { data: invitations, error: inviteError } = await supabase
     .from("household_invitations")
     .select("id, email, role, child_display_name, accepted_at, revoked_at, expires_at, created_at")
@@ -332,34 +389,58 @@ export default async function ParentHouseholdPage({
 
               return (
                 <article
-                  className="grid gap-1 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
+                  className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] p-4"
                   key={membership.user_id}
                 >
-                  <h3 className="text-xl font-semibold leading-snug">
-                    {parentUser?.display_name ?? "Parent"}
-                  </h3>
-                  <p className="text-base text-[var(--muted)]">
-                    {membership.role === "admin" ? "Admin" : "Parent"}
-                    {membership.is_primary_payout_parent ? " - Primary payout parent" : ""}
-                  </p>
-                  {canManageHousehold && membership.user_id !== profile.id ? (
-                    <form action={updateParentRoleAction} className="mt-2 grid max-w-xs gap-3">
-                      <input name="parentUserId" type="hidden" value={membership.user_id} />
-                      <label className="grid gap-2 text-base font-semibold">
+                  <div className="grid gap-1">
+                    <h3 className="text-xl font-semibold leading-snug">
+                      {parentUser?.display_name ?? "Parent"}
+                    </h3>
+                    <p className="text-base text-[var(--muted)]">Parent</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                    <div className="grid gap-1">
+                      <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
                         Household role
-                        <select
-                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                          defaultValue={membership.role}
-                          name="role"
+                      </p>
+                      <p className="text-lg font-semibold">
+                        {membership.role === "admin" ? "Admin" : "Parent"}
+                        {membership.is_primary_payout_parent ? (
+                          <span className="text-base font-medium text-[var(--muted)]">
+                            {" "}
+                            - Primary payout parent
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                  {canManageHousehold && membership.user_id !== profile.id ? (
+                    <details className="grid gap-3 border-t border-[var(--line)] pt-3">
+                      <summary className="flex min-h-12 w-fit list-none items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-base font-semibold text-[var(--accent-strong)] [&::-webkit-details-marker]:hidden">
+                        <EditIcon />
+                        Edit role
+                      </summary>
+                      <form action={updateParentRoleAction} className="grid max-w-xs gap-3 pt-3">
+                        <input name="parentUserId" type="hidden" value={membership.user_id} />
+                        <label className="grid gap-2 text-base font-semibold">
+                          Household role
+                          <select
+                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                            defaultValue={membership.role}
+                            name="role"
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="parent">Parent</option>
+                          </select>
+                        </label>
+                        <button
+                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold"
+                          type="submit"
                         >
-                          <option value="admin">Admin</option>
-                          <option value="parent">Parent</option>
-                        </select>
-                      </label>
-                      <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold">
-                        Save role
-                      </button>
-                    </form>
+                          Save role
+                        </button>
+                      </form>
+                    </details>
                   ) : null}
                 </article>
               );
@@ -378,6 +459,13 @@ export default async function ParentHouseholdPage({
                 const childProfile = childProfiles?.find(
                   (profileRecord) => profileRecord.user_id === membership.user_id,
                 );
+                const availabilityWindow = childProfile
+                  ? availabilityWindows?.find((window) => window.child_profile_id === childProfile.id) ?? null
+                  : null;
+                const allowanceLabel =
+                  childProfile?.allowance_enabled
+                    ? formatMoney(childProfile.base_allowance_cents)
+                    : "Not set";
 
                 return (
                   <article
@@ -389,57 +477,91 @@ export default async function ParentHouseholdPage({
                         {childUser?.display_name ?? "Child"}
                       </h3>
                       <p className="text-base text-[var(--muted)]">Child</p>
-                      {household.money_features_enabled && childProfile ? (
-                        <p className="text-base font-medium">
-                          Base allowance:{" "}
-                          {childProfile.allowance_enabled
-                            ? formatMoney(childProfile.base_allowance_cents)
-                            : "Off"}
-                        </p>
-                      ) : null}
                     </div>
                     {childProfile ? (
                       <>
-                        <Link
-                          className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-center text-lg font-semibold"
-                          href={`/parent/children/${childProfile.id}/availability?returnTo=${encodeURIComponent("/parent/household")}&returnLabel=${encodeURIComponent("Household")}`}
-                        >
-                          Set availability
-                        </Link>
-                        {canManageHousehold && household.money_features_enabled ? (
-                          <form action={updateChildAllowanceAction} className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--background)] p-3">
-                            <input name="childProfileId" type="hidden" value={childProfile.id} />
-                            <label className="flex items-start gap-3 text-base font-semibold">
-                              <input
-                                className="mt-1 size-5"
-                                defaultChecked={childProfile.allowance_enabled}
-                                name="allowanceEnabled"
-                                type="checkbox"
-                              />
-                              <span className="grid gap-1">
-                                <span>Base allowance</span>
-                                <span className="text-sm font-normal text-[var(--muted)]">
-                                  Included once per payout period before extra chore payouts.
+                        <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                          <div className="grid gap-1">
+                            <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                              Availability
+                            </p>
+                            <p className="text-lg font-semibold">
+                              {describeAvailabilityPattern(availabilityWindow)}
+                            </p>
+                          </div>
+                          <Link
+                            aria-label={`Edit availability for ${childUser?.display_name ?? "child"}`}
+                            className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] text-[var(--accent-strong)]"
+                            href={`/parent/children/${childProfile.id}/availability?returnTo=${encodeURIComponent("/parent/household")}&returnLabel=${encodeURIComponent("Household")}`}
+                            title="Edit availability"
+                          >
+                            <EditIcon />
+                          </Link>
+                        </div>
+                        {household.money_features_enabled ? (
+                          canManageHousehold ? (
+                            <details className="grid gap-3 border-t border-[var(--line)] pt-3">
+                              <summary className="flex min-h-12 list-none items-center justify-between gap-3 rounded-2xl border border-transparent px-0 py-1 [&::-webkit-details-marker]:hidden">
+                                <span className="grid gap-1">
+                                  <span className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                                    Base allowance
+                                  </span>
+                                  <span className="text-lg font-semibold">{allowanceLabel}</span>
                                 </span>
-                              </span>
-                            </label>
-                            <label className="grid gap-2 text-base font-semibold">
-                              Amount per payout period
-                              <input
-                                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
-                                defaultValue={dollarsFromCents(childProfile.base_allowance_cents)}
-                                inputMode="decimal"
-                                min="0"
-                                name="baseAllowanceDollars"
-                                placeholder="10.00"
-                                step="0.01"
-                                type="number"
-                              />
-                            </label>
-                            <button className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]">
-                              Save allowance
-                            </button>
-                          </form>
+                                <span
+                                  aria-label={`Edit base allowance for ${childUser?.display_name ?? "child"}`}
+                                  className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] text-[var(--accent-strong)]"
+                                  role="button"
+                                  title="Edit base allowance"
+                                >
+                                  <EditIcon />
+                                </span>
+                              </summary>
+                              <form action={updateChildAllowanceAction} className="grid gap-3 pt-2">
+                                <input name="childProfileId" type="hidden" value={childProfile.id} />
+                                <label className="flex items-start gap-3 text-base font-semibold">
+                                  <input
+                                    className="mt-1 size-5"
+                                    defaultChecked={childProfile.allowance_enabled}
+                                    name="allowanceEnabled"
+                                    type="checkbox"
+                                  />
+                                  <span className="grid gap-1">
+                                    <span>Base allowance</span>
+                                    <span className="text-sm font-normal text-[var(--muted)]">
+                                      Included once per payout period before extra chore payouts.
+                                    </span>
+                                  </span>
+                                </label>
+                                <label className="grid gap-2 text-base font-semibold">
+                                  Amount per payout period
+                                  <input
+                                    className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                                    defaultValue={dollarsFromCents(childProfile.base_allowance_cents)}
+                                    inputMode="decimal"
+                                    min="0"
+                                    name="baseAllowanceDollars"
+                                    placeholder="10.00"
+                                    step="0.01"
+                                    type="number"
+                                  />
+                                </label>
+                                <button
+                                  className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg font-semibold text-[var(--accent-strong)]"
+                                  type="submit"
+                                >
+                                  Save allowance
+                                </button>
+                              </form>
+                            </details>
+                          ) : (
+                            <div className="grid gap-1 border-t border-[var(--line)] pt-3">
+                              <p className="text-sm font-semibold uppercase text-[var(--subtle)]">
+                                Base allowance
+                              </p>
+                              <p className="text-lg font-semibold">{allowanceLabel}</p>
+                            </div>
+                          )
                         ) : null}
                       </>
                     ) : null}
