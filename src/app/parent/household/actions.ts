@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -148,6 +149,7 @@ export async function updateHouseholdAction(formData: FormData) {
     householdSetupError(error.message);
   }
 
+  revalidatePath("/parent/household");
   redirect("/parent/household?saved=1");
 }
 
@@ -178,6 +180,7 @@ export async function updateParentRoleAction(formData: FormData) {
     householdSetupError(error.message);
   }
 
+  revalidatePath("/parent/household");
   redirect("/parent/household?saved=1");
 }
 
@@ -197,18 +200,25 @@ export async function updateChildAllowanceAction(formData: FormData) {
     : 0;
 
   const { householdId, supabase } = await requireAdminHousehold();
-  const { error } = await supabase
+  const { data: updatedChildProfile, error } = await supabase
     .from("child_profiles")
     .update({
       allowance_enabled: parsed.data.allowanceEnabled,
       base_allowance_cents: amountCents,
     })
     .eq("id", parsed.data.childProfileId)
-    .eq("primary_household_id", householdId);
+    .eq("primary_household_id", householdId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     householdSetupError(error.message);
   }
 
+  if (!updatedChildProfile) {
+    householdSetupError("That child profile could not be found in this household.");
+  }
+
+  revalidatePath("/parent/household");
   redirect("/parent/household?saved=1");
 }

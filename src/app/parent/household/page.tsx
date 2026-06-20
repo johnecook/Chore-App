@@ -191,6 +191,7 @@ export default async function ParentHouseholdPage({
     ? await supabase
         .from("child_profiles")
         .select("id, user_id, allowance_enabled, base_allowance_cents")
+        .eq("primary_household_id", householdId)
         .in("user_id", userIds)
     : { data: [], error: null };
 
