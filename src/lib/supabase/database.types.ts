@@ -271,6 +271,7 @@ export type Database = {
           rotation_cadence: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
           rotation_child_scope: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
           rotation_anchor_date: string | null;
+          rotation_start_child_profile_id: string | null;
           value_model: Database["public"]["Enums"]["chore_value_model"];
           amount_cents: number;
           photo_required: boolean;
@@ -297,6 +298,7 @@ export type Database = {
           rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
           rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
           rotation_anchor_date?: string | null;
+          rotation_start_child_profile_id?: string | null;
           value_model: Database["public"]["Enums"]["chore_value_model"];
           amount_cents?: number;
           photo_required?: boolean;
@@ -323,6 +325,7 @@ export type Database = {
           rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
           rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
           rotation_anchor_date?: string | null;
+          rotation_start_child_profile_id?: string | null;
           value_model?: Database["public"]["Enums"]["chore_value_model"];
           amount_cents?: number;
           photo_required?: boolean;
@@ -832,6 +835,7 @@ export type Database = {
           chore_checklist_items?: string[];
           chore_rotation_cadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
           chore_rotation_child_scope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+          chore_rotation_start_child_profile_id?: string | null;
         };
         Returns: string;
       };

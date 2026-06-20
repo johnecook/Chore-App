@@ -26,6 +26,7 @@ const choreTemplateFormSchema = z
     assignmentMode: assignmentModeSchema,
     rotationCadence: rotationCadenceSchema.optional(),
     rotationChildScope: rotationChildScopeSchema.optional(),
+    rotationStartChildProfileId: z.uuid().optional(),
     valueModel: valueModelSchema,
     amountDollars: z.coerce.number().min(0).max(9999).optional(),
     selectedChildProfileIds: z.array(z.uuid()),
@@ -86,6 +87,19 @@ const choreTemplateFormSchema = z
       });
     }
 
+    if (
+      data.assignmentMode === "rotation" &&
+      data.rotationChildScope === "selected_children" &&
+      data.rotationStartChildProfileId &&
+      !data.selectedChildProfileIds.includes(data.rotationStartChildProfileId)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rotationStartChildProfileId"],
+        message: "Choose a starting child included in this rotation.",
+      });
+    }
+
     if (data.valueModel === "fixed" && (!data.amountDollars || data.amountDollars <= 0)) {
       ctx.addIssue({
         code: "custom",
@@ -126,6 +140,7 @@ export async function createChoreTemplateAction(formData: FormData) {
     assignmentMode: formData.get("assignmentMode"),
     rotationCadence: optionalString(formData.get("rotationCadence")),
     rotationChildScope: optionalString(formData.get("rotationChildScope")),
+    rotationStartChildProfileId: optionalString(formData.get("rotationStartChildProfileId")),
     valueModel: formData.get("valueModel"),
     amountDollars: optionalString(formData.get("amountDollars")),
     selectedChildProfileIds: formData.getAll("selectedChildProfileIds"),
@@ -177,6 +192,8 @@ export async function createChoreTemplateAction(formData: FormData) {
       assignmentMode: parsed.data.assignmentMode,
       rotationCadence: parsed.data.assignmentMode === "rotation" ? parsed.data.rotationCadence : null,
       rotationChildScope: parsed.data.assignmentMode === "rotation" ? parsed.data.rotationChildScope : null,
+      rotationStartChildProfileId:
+        parsed.data.assignmentMode === "rotation" ? parsed.data.rotationStartChildProfileId ?? null : null,
       valueModel: parsed.data.valueModel,
       amountCents,
       photoRequired: parsed.data.photoRequired,
@@ -184,7 +201,7 @@ export async function createChoreTemplateAction(formData: FormData) {
       selectedChildProfileIds:
         parsed.data.assignmentMode === "selected_children" ||
         (parsed.data.assignmentMode === "rotation" && parsed.data.rotationChildScope === "selected_children")
-          ? parsed.data.selectedChildProfileIds
+          ? orderRotationChildren(parsed.data.selectedChildProfileIds, parsed.data.rotationStartChildProfileId)
           : [],
       checklistItems: parsed.data.checklistItems,
     });
@@ -193,4 +210,15 @@ export async function createChoreTemplateAction(formData: FormData) {
   }
 
   redirect(`/parent/chores?createdChore=${templateId}`);
+}
+
+function orderRotationChildren(childProfileIds: string[], startChildProfileId?: string) {
+  if (!startChildProfileId) {
+    return childProfileIds;
+  }
+
+  return [
+    startChildProfileId,
+    ...childProfileIds.filter((childProfileId) => childProfileId !== startChildProfileId),
+  ];
 }

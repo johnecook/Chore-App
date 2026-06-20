@@ -27,6 +27,7 @@ type ChoreTemplateFormDefaults = {
   photoRequired: boolean;
   rotationCadence?: RotationCadence | null;
   rotationChildScope?: RotationChildScope | null;
+  rotationStartChildProfileId?: string | null;
   scheduleType: ScheduleType;
   selectedChildProfileIds?: string[];
   startDate: string;
@@ -311,6 +312,21 @@ export function ChoreTemplateFormFields({
                 </div>
               </fieldset>
             ) : null}
+            <label className="grid gap-2 text-base font-semibold">
+              Start rotation with
+              <select
+                className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface-elevated)] px-4 py-3 text-lg"
+                defaultValue={defaults.rotationStartChildProfileId ?? ""}
+                name="rotationStartChildProfileId"
+              >
+                <option value="">First child in the list</option>
+                {children.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <p className="text-base text-[var(--muted)]">
               Rotation starts from the chore start date and skips unavailable children.
             </p>

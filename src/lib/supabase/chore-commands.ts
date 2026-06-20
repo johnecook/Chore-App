@@ -43,6 +43,7 @@ export function createChoreTemplate(
     assignmentMode: Database["public"]["Enums"]["chore_assignment_mode"];
     rotationCadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
     rotationChildScope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+    rotationStartChildProfileId?: string | null;
     valueModel: Database["public"]["Enums"]["chore_value_model"];
     amountCents: number;
     photoRequired: boolean;
@@ -73,6 +74,7 @@ export function createChoreTemplate(
       ? {
           chore_rotation_cadence: params.rotationCadence ?? null,
           chore_rotation_child_scope: params.rotationChildScope ?? null,
+          chore_rotation_start_child_profile_id: params.rotationStartChildProfileId ?? null,
         }
       : {}),
   };
@@ -153,6 +155,7 @@ export async function updateChoreTemplateBasics(
     assignmentMode: Database["public"]["Enums"]["chore_assignment_mode"];
     rotationCadence?: Database["public"]["Enums"]["chore_rotation_cadence"] | null;
     rotationChildScope?: Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+    rotationStartChildProfileId?: string | null;
     valueModel: Database["public"]["Enums"]["chore_value_model"];
     amountCents: number;
     photoRequired: boolean;
@@ -180,6 +183,29 @@ export async function updateChoreTemplateBasics(
     }
   }
 
+  if (params.assignmentMode === "rotation" && params.rotationStartChildProfileId) {
+    const { count, error: startChildCountError } = await client
+      .from("child_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_household_id", params.householdId)
+      .eq("id", params.rotationStartChildProfileId);
+
+    if (startChildCountError) {
+      throw new Error(startChildCountError.message);
+    }
+
+    if (count !== 1) {
+      throw new Error("Choose a starting child from this household.");
+    }
+
+    if (
+      params.rotationChildScope === "selected_children" &&
+      !params.selectedChildProfileIds.includes(params.rotationStartChildProfileId)
+    ) {
+      throw new Error("Choose a starting child included in this rotation.");
+    }
+  }
+
   const updateFields = {
     title: params.title,
     description: params.description ?? null,
@@ -200,6 +226,7 @@ export async function updateChoreTemplateBasics(
           rotation_cadence: params.rotationCadence,
           rotation_child_scope: params.rotationChildScope,
           rotation_anchor_date: params.startDate,
+          rotation_start_child_profile_id: params.rotationStartChildProfileId ?? null,
         }
       : {}),
   };

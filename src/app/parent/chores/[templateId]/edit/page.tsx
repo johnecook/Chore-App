@@ -5,12 +5,17 @@ import { ChoreTemplateFormFields } from "@/components/chore-template-form-fields
 import { ParentNav } from "@/components/parent-nav";
 import { AppShell } from "@/components/ui";
 import { getCurrentParentHouseholdId, requireCurrentProfile } from "@/lib/auth/session";
+import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
+}
+
+function isMissingColumnError(error: { message: string } | null) {
+  return Boolean(error?.message.includes("column") && error.message.includes("does not exist"));
 }
 
 export default async function EditChoreTemplatePage({
@@ -36,22 +41,34 @@ export default async function EditChoreTemplatePage({
   }
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: household, error: householdError }, { data: template, error: templateError }] =
-    await Promise.all([
-      supabase
-        .from("households")
-        .select("id, money_features_enabled")
-        .eq("id", householdId)
-        .maybeSingle(),
-      supabase
+  const { data: household, error: householdError } = await supabase
+    .from("households")
+    .select("id, money_features_enabled")
+    .eq("id", householdId)
+    .maybeSingle();
+
+  const templateQuery = await supabase
+    .from("chore_templates")
+    .select(
+      "id, title, description, schedule_type, start_date, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, rotation_cadence, rotation_child_scope, rotation_start_child_profile_id, value_model, amount_cents, photo_required, approval_required, active",
+    )
+    .eq("id", routeParams.templateId)
+    .eq("household_id", householdId)
+    .maybeSingle();
+
+  const fallbackTemplateQuery = isMissingColumnError(templateQuery.error)
+    ? await supabase
         .from("chore_templates")
         .select(
           "id, title, description, schedule_type, start_date, weekly_weekdays, interval_days, one_off_date, due_time_start, due_time_end, assignment_mode, value_model, amount_cents, photo_required, approval_required, active",
         )
         .eq("id", routeParams.templateId)
         .eq("household_id", householdId)
-        .maybeSingle(),
-    ]);
+        .maybeSingle()
+    : null;
+
+  const template = fallbackTemplateQuery?.data ?? templateQuery.data;
+  const templateError = fallbackTemplateQuery?.error ?? (fallbackTemplateQuery ? null : templateQuery.error);
 
   if (householdError) {
     throw new Error(householdError.message);
@@ -95,11 +112,20 @@ export default async function EditChoreTemplatePage({
     throw new Error(childUserError.message);
   }
 
-  const { data: assignees, error: assigneeError } = await supabase
+  const assigneeQuery = await supabase
     .from("chore_template_assignees")
     .select("child_profile_id")
     .eq("template_id", template.id)
     .order("position", { ascending: true });
+
+  const fallbackAssigneeQuery = isMissingColumnError(assigneeQuery.error)
+    ? await supabase
+        .from("chore_template_assignees")
+        .select("child_profile_id")
+        .eq("template_id", template.id)
+    : null;
+  const assignees = fallbackAssigneeQuery?.data ?? assigneeQuery.data;
+  const assigneeError = fallbackAssigneeQuery?.error ?? (fallbackAssigneeQuery ? null : assigneeQuery.error);
 
   if (assigneeError) {
     throw new Error(assigneeError.message);
@@ -177,8 +203,14 @@ export default async function EditChoreTemplatePage({
                 intervalDays: template.interval_days,
                 oneOffDate: template.one_off_date ?? "",
                 photoRequired: template.photo_required,
-                rotationCadence: null,
-                rotationChildScope: null,
+                rotationCadence: (
+                  "rotation_cadence" in template ? template.rotation_cadence : null
+                ) as Database["public"]["Enums"]["chore_rotation_cadence"] | null,
+                rotationChildScope: (
+                  "rotation_child_scope" in template ? template.rotation_child_scope : null
+                ) as Database["public"]["Enums"]["chore_rotation_child_scope"] | null,
+                rotationStartChildProfileId:
+                  ("rotation_start_child_profile_id" in template ? template.rotation_start_child_profile_id : null) as string | null,
                 scheduleType: template.schedule_type,
                 selectedChildProfileIds: [...selectedChildProfileIds],
                 startDate: template.start_date,
