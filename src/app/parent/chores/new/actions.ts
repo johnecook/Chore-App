@@ -11,18 +11,24 @@ const assignmentModeSchema = z.enum(["selected_children", "all_eligible_children
 const rotationCadenceSchema = z.enum(["daily", "weekly", "monthly"]);
 const rotationChildScopeSchema = z.enum(["all_children", "selected_children"]);
 const valueModelSchema = z.enum(["fixed", "allowance_included", "unpaid"]);
+const dateSchema = (message: string) => z.string().regex(/^\d{4}-\d{2}-\d{2}$/, message);
+const timeSchema = (message: string) =>
+  z
+    .string()
+    .regex(/^\d{2}:\d{2}(?::\d{2})?$/, message)
+    .transform((value) => value.slice(0, 5));
 
 const choreTemplateFormSchema = z
   .object({
     title: z.string().trim().min(1, "Enter a chore title.").max(120, "Keep the title under 120 characters."),
     description: z.string().trim().max(500, "Keep the description under 500 characters.").optional(),
     scheduleType: scheduleTypeSchema,
-    startDate: z.iso.date(),
+    startDate: dateSchema("Choose a valid start date."),
     weeklyWeekdays: z.array(z.coerce.number().int().min(0).max(6)),
     intervalDays: z.coerce.number().int().min(1).max(365).optional(),
-    oneOffDate: z.iso.date().optional(),
-    dueTimeStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-    dueTimeEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    oneOffDate: dateSchema("Choose a valid chore date.").optional(),
+    dueTimeStart: timeSchema("Enter a valid due-after time.").optional(),
+    dueTimeEnd: timeSchema("Enter a valid due-before time.").optional(),
     assignmentMode: assignmentModeSchema,
     rotationCadence: rotationCadenceSchema.optional(),
     rotationChildScope: rotationChildScopeSchema.optional(),
@@ -177,7 +183,37 @@ function createChoreErrorPath(message: string, formData: FormData) {
 }
 
 function validationErrorMessage(error: z.ZodError) {
-  return error.issues[0]?.message ?? "Check the chore details and try again.";
+  const issue = error.issues[0];
+
+  if (!issue) {
+    return "Check the chore details and try again.";
+  }
+
+  if (issue.message && !issue.message.startsWith("Invalid")) {
+    return issue.message;
+  }
+
+  const fieldName = issue.path[0];
+  const fieldMessages: Record<string, string> = {
+    amountDollars: "Enter a valid chore amount.",
+    assignmentMode: "Choose how this chore is assigned.",
+    dueTimeEnd: "Enter a valid due-before time.",
+    dueTimeStart: "Enter a valid due-after time.",
+    intervalDays: "Enter a valid interval.",
+    oneOffDate: "Choose a valid chore date.",
+    rotationCadence: "Choose how often this chore rotates.",
+    rotationChildScope: "Choose which children are in this rotation.",
+    rotationStartChildProfileId: "Choose a valid child to start the rotation.",
+    scheduleType: "Choose a valid schedule type.",
+    selectedChildProfileIds: "Choose a valid child.",
+    startDate: "Choose a valid start date.",
+    valueModel: "Choose a valid value type.",
+    weeklyWeekdays: "Choose valid weekdays.",
+  };
+
+  return typeof fieldName === "string"
+    ? (fieldMessages[fieldName] ?? "Check the chore details and try again.")
+    : "Check the chore details and try again.";
 }
 
 export async function createChoreTemplateAction(formData: FormData) {
