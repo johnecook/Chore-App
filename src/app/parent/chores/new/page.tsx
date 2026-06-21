@@ -23,9 +23,69 @@ const presetCategories: Array<{
 ];
 
 type ChorePreset = Database["public"]["Tables"]["chore_template_presets"]["Row"];
+type SearchParamValue = string | string[] | undefined;
+type NewChoreSearchParams = {
+  [key: string]: SearchParamValue;
+  draft?: SearchParamValue;
+  error?: SearchParamValue;
+  preset?: SearchParamValue;
+};
+
+const scheduleTypes = ["daily", "weekly", "interval", "one_off"] as const;
+const assignmentModes = [
+  "selected_children",
+  "all_eligible_children",
+  "up_for_grabs",
+  "rotation",
+] as const;
+const rotationCadences = ["daily", "weekly", "monthly"] as const;
+const rotationChildScopes = ["all_children", "selected_children"] as const;
+const valueModels = ["fixed", "allowance_included", "unpaid"] as const;
 
 function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
+}
+
+function paramString(value: SearchParamValue) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function paramStringArray(value: SearchParamValue) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
+function paramEnum<T extends string>(value: SearchParamValue, allowedValues: readonly T[], fallback: T) {
+  const stringValue = paramString(value);
+  return allowedValues.includes(stringValue as T) ? (stringValue as T) : fallback;
+}
+
+function paramBoolean(value: SearchParamValue, fallback: boolean) {
+  const stringValue = paramString(value);
+
+  if (stringValue === "on") {
+    return true;
+  }
+
+  if (stringValue === "off") {
+    return false;
+  }
+
+  return fallback;
+}
+
+function paramNumber(value: SearchParamValue, fallback: number | null) {
+  const stringValue = paramString(value);
+
+  if (!stringValue) {
+    return fallback;
+  }
+
+  const parsedValue = Number(stringValue);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
 }
 
 function scheduleTypeLabel(scheduleType: Database["public"]["Enums"]["chore_schedule_type"]) {
@@ -61,7 +121,7 @@ function presetValueLabel(preset: ChorePreset, moneyFeaturesEnabled: boolean) {
 export default async function NewChorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; preset?: string }>;
+  searchParams: Promise<NewChoreSearchParams>;
 }) {
   const [profile, householdId, params] = await Promise.all([
     requireCurrentProfile(),
@@ -149,7 +209,8 @@ export default async function NewChorePage({
     };
   });
   const today = new Date().toISOString().slice(0, 10);
-  const selectedPreset = presets?.find((preset) => preset.id === params.preset) ?? null;
+  const hasDraft = paramString(params.draft) === "1";
+  const selectedPreset = presets?.find((preset) => preset.id === paramString(params.preset)) ?? null;
   const selectedWeeklyWeekdays = new Set(
     selectedPreset?.suggested_weekly_weekdays?.map((weekday) => String(weekday)) ?? [],
   );
@@ -163,6 +224,41 @@ export default async function NewChorePage({
   const defaultScheduleType = selectedPreset?.suggested_schedule_type ?? "one_off";
   const defaultOneOffDate =
     selectedPreset?.suggested_schedule_type === "one_off" || !selectedPreset ? today : "";
+  const defaultAssignmentMode = selectedPreset?.suggested_assignment_mode ?? "selected_children";
+  const defaultPhotoRequired = selectedPreset?.suggested_photo_required ?? true;
+  const defaultApprovalRequired = selectedPreset?.suggested_approval_required ?? true;
+  const draftValueModel = paramEnum(params.valueModel, valueModels, defaultValueModel);
+  const formDefaults = {
+    amountDollars: hasDraft ? (paramString(params.amountDollars) ?? "") : presetAmountDollars,
+    approvalRequired: hasDraft
+      ? paramBoolean(params.approvalRequired, defaultApprovalRequired)
+      : defaultApprovalRequired,
+    assignmentMode: hasDraft
+      ? paramEnum(params.assignmentMode, assignmentModes, defaultAssignmentMode)
+      : defaultAssignmentMode,
+    checklistItems: hasDraft ? paramStringArray(params.checklistItems) : [],
+    description: hasDraft ? (paramString(params.description) ?? "") : (selectedPreset?.description ?? ""),
+    dueTimeEnd: hasDraft ? (paramString(params.dueTimeEnd) ?? "") : (selectedPreset?.suggested_due_time_end ?? ""),
+    dueTimeStart: hasDraft
+      ? (paramString(params.dueTimeStart) ?? "")
+      : (selectedPreset?.suggested_due_time_start ?? ""),
+    intervalDays: hasDraft
+      ? paramNumber(params.intervalDays, selectedPreset?.suggested_interval_days ?? null)
+      : (selectedPreset?.suggested_interval_days ?? null),
+    oneOffDate: hasDraft ? (paramString(params.oneOffDate) ?? defaultOneOffDate) : defaultOneOffDate,
+    photoRequired: hasDraft ? paramBoolean(params.photoRequired, defaultPhotoRequired) : defaultPhotoRequired,
+    rotationCadence: hasDraft ? paramEnum(params.rotationCadence, rotationCadences, "weekly") : "weekly",
+    rotationChildScope: hasDraft
+      ? paramEnum(params.rotationChildScope, rotationChildScopes, "all_children")
+      : "all_children",
+    rotationStartChildProfileId: hasDraft ? (paramString(params.rotationStartChildProfileId) ?? null) : null,
+    scheduleType: hasDraft ? paramEnum(params.scheduleType, scheduleTypes, defaultScheduleType) : defaultScheduleType,
+    selectedChildProfileIds: hasDraft ? paramStringArray(params.selectedChildProfileIds) : [],
+    startDate: hasDraft ? (paramString(params.startDate) ?? today) : today,
+    title: hasDraft ? (paramString(params.title) ?? "") : (selectedPreset?.title ?? ""),
+    valueModel: draftValueModel === "fixed" && !moneyFeaturesEnabled ? "unpaid" : draftValueModel,
+    weeklyWeekdays: hasDraft ? paramStringArray(params.weeklyWeekdays) : [...selectedWeeklyWeekdays],
+  };
   const presetsByCategory = presetCategories
     .map((category) => ({
       ...category,
@@ -192,7 +288,7 @@ export default async function NewChorePage({
 
         {params.error ? (
           <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
-            {params.error}
+            {paramString(params.error)}
           </p>
         ) : null}
 
@@ -238,27 +334,10 @@ export default async function NewChorePage({
             ) : null}
 
             <form action={createChoreTemplateAction} className="grid max-w-2xl gap-6">
+              <input name="presetId" type="hidden" value={selectedPreset?.id ?? ""} />
               <ChoreTemplateFormFields
                 children={children}
-                defaults={{
-                  amountDollars: presetAmountDollars,
-                  approvalRequired: selectedPreset?.suggested_approval_required ?? true,
-                  assignmentMode: selectedPreset?.suggested_assignment_mode ?? "selected_children",
-                  checklistItems: [],
-                  description: selectedPreset?.description ?? "",
-                  dueTimeEnd: selectedPreset?.suggested_due_time_end ?? "",
-                  dueTimeStart: selectedPreset?.suggested_due_time_start ?? "",
-                  intervalDays: selectedPreset?.suggested_interval_days ?? null,
-                  oneOffDate: defaultOneOffDate,
-                  photoRequired: selectedPreset?.suggested_photo_required ?? true,
-                  rotationCadence: "weekly",
-                  rotationChildScope: "all_children",
-                  scheduleType: defaultScheduleType,
-                  startDate: today,
-                  title: selectedPreset?.title ?? "",
-                  valueModel: defaultValueModel,
-                  weeklyWeekdays: [...selectedWeeklyWeekdays],
-                }}
+                defaults={formDefaults}
                 moneyFeaturesEnabled={moneyFeaturesEnabled}
                 submitLabel="Create chore"
               />

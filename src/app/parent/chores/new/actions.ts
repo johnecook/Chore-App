@@ -14,8 +14,8 @@ const valueModelSchema = z.enum(["fixed", "allowance_included", "unpaid"]);
 
 const choreTemplateFormSchema = z
   .object({
-    title: z.string().trim().min(1).max(120),
-    description: z.string().trim().max(500).optional(),
+    title: z.string().trim().min(1, "Enter a chore title.").max(120, "Keep the title under 120 characters."),
+    description: z.string().trim().max(500, "Keep the description under 500 characters.").optional(),
     scheduleType: scheduleTypeSchema,
     startDate: z.iso.date(),
     weeklyWeekdays: z.array(z.coerce.number().int().min(0).max(6)),
@@ -30,7 +30,9 @@ const choreTemplateFormSchema = z
     valueModel: valueModelSchema,
     amountDollars: z.coerce.number().min(0).max(9999).optional(),
     selectedChildProfileIds: z.array(z.uuid()),
-    checklistItems: z.array(z.string().trim().max(120)).max(20),
+    checklistItems: z
+      .array(z.string().trim().max(120, "Keep checklist items under 120 characters."))
+      .max(20, "Use 20 or fewer checklist items."),
     photoRequired: z.boolean(),
     approvalRequired: z.boolean(),
   })
@@ -117,13 +119,65 @@ const choreTemplateFormSchema = z
     }
   });
 
-function choreSetupError(message: string): never {
-  redirect(`/parent/chores/new?error=${encodeURIComponent(message)}`);
+function choreSetupError(message: string, formData: FormData): never {
+  redirect(createChoreErrorPath(message, formData));
 }
 
 function optionalString(value: FormDataEntryValue | null) {
   const stringValue = String(value ?? "").trim();
   return stringValue.length ? stringValue : undefined;
+}
+
+function createChoreErrorPath(message: string, formData: FormData) {
+  const params = new URLSearchParams({
+    draft: "1",
+    error: message,
+  });
+  const presetId = optionalString(formData.get("presetId"));
+
+  if (presetId) {
+    params.set("preset", presetId);
+  }
+
+  for (const field of [
+    "title",
+    "description",
+    "scheduleType",
+    "startDate",
+    "intervalDays",
+    "oneOffDate",
+    "dueTimeStart",
+    "dueTimeEnd",
+    "assignmentMode",
+    "rotationCadence",
+    "rotationChildScope",
+    "rotationStartChildProfileId",
+    "valueModel",
+    "amountDollars",
+  ]) {
+    const value = formData.get(field);
+
+    if (typeof value === "string") {
+      params.set(field, value);
+    }
+  }
+
+  for (const field of ["weeklyWeekdays", "selectedChildProfileIds", "checklistItems"]) {
+    for (const value of formData.getAll(field)) {
+      if (typeof value === "string") {
+        params.append(field, value);
+      }
+    }
+  }
+
+  params.set("photoRequired", formData.get("photoRequired") === "on" ? "on" : "off");
+  params.set("approvalRequired", formData.get("approvalRequired") === "on" ? "on" : "off");
+
+  return `/parent/chores/new?${params.toString()}`;
+}
+
+function validationErrorMessage(error: z.ZodError) {
+  return error.issues[0]?.message ?? "Check the chore details and try again.";
 }
 
 export async function createChoreTemplateAction(formData: FormData) {
@@ -153,7 +207,7 @@ export async function createChoreTemplateAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    choreSetupError("Check the chore details and try again.");
+    choreSetupError(validationErrorMessage(parsed.error), formData);
   }
 
   const householdId = await requireCurrentParentHouseholdId();
@@ -168,11 +222,11 @@ export async function createChoreTemplateAction(formData: FormData) {
     .maybeSingle();
 
   if (householdError) {
-    choreSetupError(householdError.message);
+    choreSetupError(householdError.message, formData);
   }
 
   if (parsed.data.valueModel === "fixed" && !household?.money_features_enabled) {
-    choreSetupError("Enable money features before creating paid chores.");
+    choreSetupError("Enable money features before creating paid chores.", formData);
   }
 
   let templateId: string;
@@ -206,7 +260,7 @@ export async function createChoreTemplateAction(formData: FormData) {
       checklistItems: parsed.data.checklistItems,
     });
   } catch (error) {
-    choreSetupError(error instanceof Error ? error.message : "Could not create chore.");
+    choreSetupError(error instanceof Error ? error.message : "Could not create chore.", formData);
   }
 
   redirect(`/parent/chores?createdChore=${templateId}`);
