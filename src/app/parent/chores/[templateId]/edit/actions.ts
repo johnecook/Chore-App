@@ -1,164 +1,40 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { z } from "zod";
+import {
+  appendChoreTemplateFormParams,
+  choreTemplateCommandErrorMessage,
+  choreTemplateFormValues,
+  editChoreTemplateFormSchema,
+  optionalString,
+  orderRotationChildren,
+  validationErrorMessage,
+} from "@/app/parent/chores/form-validation";
 import { requireCurrentParentHouseholdId } from "@/lib/auth/session";
 import { updateChoreTemplateBasics } from "@/lib/supabase/chore-commands";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const scheduleTypeSchema = z.enum(["daily", "weekly", "interval", "one_off"]);
-const assignmentModeSchema = z.enum(["selected_children", "all_eligible_children", "up_for_grabs", "rotation"]);
-const rotationCadenceSchema = z.enum(["daily", "weekly", "monthly"]);
-const rotationChildScopeSchema = z.enum(["all_children", "selected_children"]);
-const valueModelSchema = z.enum(["fixed", "allowance_included", "unpaid"]);
-
-const editChoreTemplateFormSchema = z
-  .object({
-    templateId: z.uuid(),
-    title: z.string().trim().min(1).max(120),
-    description: z.string().trim().max(500).optional(),
-    scheduleType: scheduleTypeSchema,
-    startDate: z.iso.date(),
-    weeklyWeekdays: z.array(z.coerce.number().int().min(0).max(6)),
-    intervalDays: z.coerce.number().int().min(1).max(365).optional(),
-    oneOffDate: z.iso.date().optional(),
-    dueTimeStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-    dueTimeEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-    assignmentMode: assignmentModeSchema,
-    rotationCadence: rotationCadenceSchema.optional(),
-    rotationChildScope: rotationChildScopeSchema.optional(),
-    rotationStartChildProfileId: z.uuid().optional(),
-    valueModel: valueModelSchema,
-    amountDollars: z.coerce.number().min(0).max(9999).optional(),
-    selectedChildProfileIds: z.array(z.uuid()),
-    checklistItems: z.array(z.string().trim().max(120)).max(20),
-    photoRequired: z.boolean(),
-    approvalRequired: z.boolean(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.scheduleType === "weekly" && data.weeklyWeekdays.length === 0) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["weeklyWeekdays"],
-        message: "Choose at least one weekday.",
-      });
-    }
-
-    if (data.scheduleType === "interval" && !data.intervalDays) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["intervalDays"],
-        message: "Enter an interval.",
-      });
-    }
-
-    if (data.scheduleType === "one_off" && !data.oneOffDate) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["oneOffDate"],
-        message: "Choose a date.",
-      });
-    }
-
-    if (data.assignmentMode === "selected_children" && data.selectedChildProfileIds.length === 0) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["selectedChildProfileIds"],
-        message: "Choose at least one child.",
-      });
-    }
-
-    if (data.assignmentMode === "rotation" && (!data.rotationCadence || !data.rotationChildScope)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["assignmentMode"],
-        message: "Choose rotation cadence and children.",
-      });
-    }
-
-    if (
-      data.assignmentMode === "rotation" &&
-      data.rotationChildScope === "selected_children" &&
-      data.selectedChildProfileIds.length === 0
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["selectedChildProfileIds"],
-        message: "Choose at least one child for this rotation.",
-      });
-    }
-
-    if (
-      data.assignmentMode === "rotation" &&
-      data.rotationChildScope === "selected_children" &&
-      data.rotationStartChildProfileId &&
-      !data.selectedChildProfileIds.includes(data.rotationStartChildProfileId)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["rotationStartChildProfileId"],
-        message: "Choose a starting child included in this rotation.",
-      });
-    }
-
-    if (data.valueModel === "fixed" && (!data.amountDollars || data.amountDollars <= 0)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["amountDollars"],
-        message: "Enter an amount for fixed-value chores.",
-      });
-    }
-
-    if (data.dueTimeStart && data.dueTimeEnd && data.dueTimeStart >= data.dueTimeEnd) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["dueTimeEnd"],
-        message: "Due window end must be after the start.",
-      });
-    }
+function editChoreTemplateError(templateId: string, message: string, formData: FormData): never {
+  const params = new URLSearchParams({
+    draft: "1",
+    error: message,
   });
 
-function optionalString(value: FormDataEntryValue | null) {
-  const stringValue = String(value ?? "").trim();
-  return stringValue.length ? stringValue : undefined;
-}
-
-function editChoreTemplateError(templateId: string, message: string): never {
-  redirect(`/parent/chores/${templateId}/edit?error=${encodeURIComponent(message)}`);
+  appendChoreTemplateFormParams(params, formData);
+  redirect(`/parent/chores/${templateId}/edit?${params.toString()}`);
 }
 
 export async function updateChoreTemplateAction(formData: FormData) {
   const parsed = editChoreTemplateFormSchema.safeParse({
     templateId: formData.get("templateId"),
-    title: formData.get("title"),
-    description: optionalString(formData.get("description")),
-    scheduleType: formData.get("scheduleType"),
-    startDate: formData.get("startDate"),
-    weeklyWeekdays: formData.getAll("weeklyWeekdays"),
-    intervalDays: optionalString(formData.get("intervalDays")),
-    oneOffDate: optionalString(formData.get("oneOffDate")),
-    dueTimeStart: optionalString(formData.get("dueTimeStart")),
-    dueTimeEnd: optionalString(formData.get("dueTimeEnd")),
-    assignmentMode: formData.get("assignmentMode"),
-    rotationCadence: optionalString(formData.get("rotationCadence")),
-    rotationChildScope: optionalString(formData.get("rotationChildScope")),
-    rotationStartChildProfileId: optionalString(formData.get("rotationStartChildProfileId")),
-    valueModel: formData.get("valueModel"),
-    amountDollars: optionalString(formData.get("amountDollars")),
-    selectedChildProfileIds: formData.getAll("selectedChildProfileIds"),
-    checklistItems: formData
-      .getAll("checklistItems")
-      .map((item) => String(item).trim())
-      .filter((item) => item.length > 0),
-    photoRequired: formData.get("photoRequired") === "on",
-    approvalRequired: formData.get("approvalRequired") === "on",
+    ...choreTemplateFormValues(formData),
   });
 
   const fallbackTemplateId = optionalString(formData.get("templateId"));
 
   if (!parsed.success) {
     if (fallbackTemplateId) {
-      editChoreTemplateError(fallbackTemplateId, "Check the chore details and try again.");
+      editChoreTemplateError(fallbackTemplateId, validationErrorMessage(parsed.error), formData);
     }
 
     redirect("/parent?error=That chore template could not be updated.");
@@ -168,7 +44,7 @@ export async function updateChoreTemplateAction(formData: FormData) {
     parsed.data.valueModel === "fixed" &&
     (!parsed.data.amountDollars || parsed.data.amountDollars <= 0)
   ) {
-    editChoreTemplateError(parsed.data.templateId, "Enter an amount for fixed-value chores.");
+    editChoreTemplateError(parsed.data.templateId, "Enter an amount for fixed-value chores.", formData);
   }
 
   const householdId = await requireCurrentParentHouseholdId();
@@ -180,11 +56,11 @@ export async function updateChoreTemplateAction(formData: FormData) {
     .maybeSingle();
 
   if (householdError) {
-    editChoreTemplateError(parsed.data.templateId, householdError.message);
+    editChoreTemplateError(parsed.data.templateId, householdError.message, formData);
   }
 
   if (parsed.data.valueModel === "fixed" && !household?.money_features_enabled) {
-    editChoreTemplateError(parsed.data.templateId, "Enable money features before creating paid chores.");
+    editChoreTemplateError(parsed.data.templateId, "Enable money features before creating paid chores.", formData);
   }
 
   const amountCents =
@@ -224,20 +100,10 @@ export async function updateChoreTemplateAction(formData: FormData) {
   } catch (error) {
     editChoreTemplateError(
       parsed.data.templateId,
-      error instanceof Error ? error.message : "Could not update chore.",
+      choreTemplateCommandErrorMessage(error, "Could not update chore."),
+      formData,
     );
   }
 
   redirect(`/parent/chores?updatedTemplate=${templateId}`);
-}
-
-function orderRotationChildren(childProfileIds: string[], startChildProfileId?: string) {
-  if (!startChildProfileId) {
-    return childProfileIds;
-  }
-
-  return [
-    startChildProfileId,
-    ...childProfileIds.filter((childProfileId) => childProfileId !== startChildProfileId),
-  ];
 }

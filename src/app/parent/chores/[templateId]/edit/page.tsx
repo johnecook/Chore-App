@@ -10,8 +10,68 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+type SearchParamValue = string | string[] | undefined;
+type EditChoreSearchParams = {
+  [key: string]: SearchParamValue;
+  draft?: SearchParamValue;
+  error?: SearchParamValue;
+};
+
+const scheduleTypes = ["daily", "weekly", "interval", "one_off"] as const;
+const assignmentModes = [
+  "selected_children",
+  "all_eligible_children",
+  "up_for_grabs",
+  "rotation",
+] as const;
+const rotationCadences = ["daily", "weekly", "monthly"] as const;
+const rotationChildScopes = ["all_children", "selected_children"] as const;
+const valueModels = ["fixed", "allowance_included", "unpaid"] as const;
+
 function dollarsFromCents(cents: number) {
   return cents > 0 ? (cents / 100).toFixed(2) : "";
+}
+
+function paramString(value: SearchParamValue) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function paramStringArray(value: SearchParamValue) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
+function paramEnum<T extends string>(value: SearchParamValue, allowedValues: readonly T[], fallback: T) {
+  const stringValue = paramString(value);
+  return allowedValues.includes(stringValue as T) ? (stringValue as T) : fallback;
+}
+
+function paramBoolean(value: SearchParamValue, fallback: boolean) {
+  const stringValue = paramString(value);
+
+  if (stringValue === "on") {
+    return true;
+  }
+
+  if (stringValue === "off") {
+    return false;
+  }
+
+  return fallback;
+}
+
+function paramNumber(value: SearchParamValue, fallback: number | null) {
+  const stringValue = paramString(value);
+
+  if (!stringValue) {
+    return fallback;
+  }
+
+  const parsedValue = Number(stringValue);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
 }
 
 function isMissingColumnError(error: { message: string } | null) {
@@ -23,7 +83,7 @@ export default async function EditChoreTemplatePage({
   searchParams,
 }: {
   params: Promise<{ templateId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<EditChoreSearchParams>;
 }) {
   const [profile, householdId, routeParams, queryParams] = await Promise.all([
     requireCurrentProfile(),
@@ -157,6 +217,54 @@ export default async function EditChoreTemplatePage({
   );
   const defaultValueModel =
     template.value_model === "fixed" && !moneyFeaturesEnabled ? "unpaid" : template.value_model;
+  const hasDraft = paramString(queryParams.draft) === "1";
+  const draftValueModel = paramEnum(queryParams.valueModel, valueModels, defaultValueModel);
+  const defaultRotationCadence = (
+    "rotation_cadence" in template ? template.rotation_cadence : null
+  ) as Database["public"]["Enums"]["chore_rotation_cadence"] | null;
+  const defaultRotationChildScope = (
+    "rotation_child_scope" in template ? template.rotation_child_scope : null
+  ) as Database["public"]["Enums"]["chore_rotation_child_scope"] | null;
+  const defaultRotationStartChildProfileId = (
+    "rotation_start_child_profile_id" in template ? template.rotation_start_child_profile_id : null
+  ) as string | null;
+  const formDefaults = {
+    amountDollars: hasDraft ? (paramString(queryParams.amountDollars) ?? "") : dollarsFromCents(template.amount_cents),
+    approvalRequired: hasDraft
+      ? paramBoolean(queryParams.approvalRequired, template.approval_required)
+      : template.approval_required,
+    assignmentMode: hasDraft
+      ? paramEnum(queryParams.assignmentMode, assignmentModes, template.assignment_mode)
+      : template.assignment_mode,
+    checklistItems: hasDraft ? paramStringArray(queryParams.checklistItems) : (checklistItems?.map((item) => item.label) ?? []),
+    description: hasDraft ? (paramString(queryParams.description) ?? "") : (template.description ?? ""),
+    dueTimeEnd: hasDraft ? (paramString(queryParams.dueTimeEnd) ?? "") : (template.due_time_end ?? ""),
+    dueTimeStart: hasDraft ? (paramString(queryParams.dueTimeStart) ?? "") : (template.due_time_start ?? ""),
+    intervalDays: hasDraft ? paramNumber(queryParams.intervalDays, template.interval_days) : template.interval_days,
+    oneOffDate: hasDraft ? (paramString(queryParams.oneOffDate) ?? "") : (template.one_off_date ?? ""),
+    photoRequired: hasDraft
+      ? paramBoolean(queryParams.photoRequired, template.photo_required)
+      : template.photo_required,
+    rotationCadence: hasDraft
+      ? paramEnum(queryParams.rotationCadence, rotationCadences, defaultRotationCadence ?? "weekly")
+      : defaultRotationCadence,
+    rotationChildScope: hasDraft
+      ? paramEnum(queryParams.rotationChildScope, rotationChildScopes, defaultRotationChildScope ?? "all_children")
+      : defaultRotationChildScope,
+    rotationStartChildProfileId: hasDraft
+      ? (paramString(queryParams.rotationStartChildProfileId) ?? null)
+      : defaultRotationStartChildProfileId,
+    scheduleType: hasDraft
+      ? paramEnum(queryParams.scheduleType, scheduleTypes, template.schedule_type)
+      : template.schedule_type,
+    selectedChildProfileIds: hasDraft
+      ? paramStringArray(queryParams.selectedChildProfileIds)
+      : [...selectedChildProfileIds],
+    startDate: hasDraft ? (paramString(queryParams.startDate) ?? template.start_date) : template.start_date,
+    title: hasDraft ? (paramString(queryParams.title) ?? "") : template.title,
+    valueModel: draftValueModel === "fixed" && !moneyFeaturesEnabled ? "unpaid" : draftValueModel,
+    weeklyWeekdays: hasDraft ? paramStringArray(queryParams.weeklyWeekdays) : [...selectedWeeklyWeekdays],
+  };
 
   return (
     <AppShell variant="web">
@@ -176,9 +284,9 @@ export default async function EditChoreTemplatePage({
           </div>
         </header>
 
-        {queryParams.error ? (
+        {paramString(queryParams.error) ? (
           <p className="rounded-2xl border border-[var(--danger)] bg-[var(--surface-elevated)] p-4 text-lg font-medium text-[var(--danger)]">
-            {queryParams.error}
+            {paramString(queryParams.error)}
           </p>
         ) : null}
 
@@ -192,32 +300,7 @@ export default async function EditChoreTemplatePage({
             <ChoreTemplateFormFields
               cancelHref="/parent/chores"
               children={children}
-              defaults={{
-                amountDollars: dollarsFromCents(template.amount_cents),
-                approvalRequired: template.approval_required,
-                assignmentMode: template.assignment_mode,
-                checklistItems: checklistItems?.map((item) => item.label) ?? [],
-                description: template.description ?? "",
-                dueTimeEnd: template.due_time_end ?? "",
-                dueTimeStart: template.due_time_start ?? "",
-                intervalDays: template.interval_days,
-                oneOffDate: template.one_off_date ?? "",
-                photoRequired: template.photo_required,
-                rotationCadence: (
-                  "rotation_cadence" in template ? template.rotation_cadence : null
-                ) as Database["public"]["Enums"]["chore_rotation_cadence"] | null,
-                rotationChildScope: (
-                  "rotation_child_scope" in template ? template.rotation_child_scope : null
-                ) as Database["public"]["Enums"]["chore_rotation_child_scope"] | null,
-                rotationStartChildProfileId:
-                  ("rotation_start_child_profile_id" in template ? template.rotation_start_child_profile_id : null) as string | null,
-                scheduleType: template.schedule_type,
-                selectedChildProfileIds: [...selectedChildProfileIds],
-                startDate: template.start_date,
-                title: template.title,
-                valueModel: defaultValueModel,
-                weeklyWeekdays: [...selectedWeeklyWeekdays],
-              }}
+              defaults={formDefaults}
               moneyFeaturesEnabled={moneyFeaturesEnabled}
               submitLabel="Save changes"
             />
