@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import {
-  approveSubmissionAction,
   deleteSubmissionPhotoAction,
-  rejectSubmissionAction,
   syncScheduleAction,
 } from "@/app/parent/actions";
+import { ParentApprovalCard } from "@/components/parent-approval-card";
 import { ParentNav } from "@/components/parent-nav";
 import {
   AppShell,
@@ -420,10 +419,10 @@ export default async function ParentHomePage({
                                 : undefined;
 
                               return (
-                                <article
-                                  className="grid gap-4 rounded-3xl border border-[var(--line)] bg-[var(--surface-soft)] p-4"
-                                  id={`approval-${instance.id}`}
+                                <ParentApprovalCard
+                                  instanceId={instance.id}
                                   key={instance.id}
+                                  submissionId={submission?.id}
                                 >
                                   <div className="grid gap-1">
                                     <h4 className="text-lg font-semibold">
@@ -484,48 +483,12 @@ export default async function ParentHomePage({
                                       </div>
                                     ) : null}
                                   </div>
-
-                                  {submission ? (
-                                    <div className="grid gap-3">
-                                      <form action={approveSubmissionAction} className="grid gap-3">
-                                        <input name="submissionId" type="hidden" value={submission.id} />
-                                        <label className="grid gap-2 text-base font-semibold">
-                                          Approval note
-                                          <input
-                                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-lg"
-                                            maxLength={500}
-                                            name="feedback"
-                                            type="text"
-                                          />
-                                        </label>
-                                        <Button>
-                                          Approve
-                                        </Button>
-                                      </form>
-
-                                      <form action={rejectSubmissionAction} className="grid gap-3">
-                                        <input name="submissionId" type="hidden" value={submission.id} />
-                                        <label className="grid gap-2 text-base font-semibold">
-                                          Send back note
-                                          <input
-                                            className="min-h-12 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-lg"
-                                            maxLength={500}
-                                            name="feedback"
-                                            required
-                                            type="text"
-                                          />
-                                        </label>
-                                        <Button variant="danger">
-                                          Send back
-                                        </Button>
-                                      </form>
-                                    </div>
-                                  ) : (
+                                  {!submission ? (
                                     <p className="text-base text-[var(--muted)]">
                                       Submission details unavailable.
                                     </p>
-                                  )}
-                                </article>
+                                  ) : null}
+                                </ParentApprovalCard>
                               );
                             })}
                           </div>

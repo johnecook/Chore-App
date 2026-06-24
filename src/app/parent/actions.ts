@@ -109,6 +109,33 @@ export async function approveSubmissionAction(formData: FormData) {
   redirect(`/parent?approved=${approvalId}`);
 }
 
+export async function approveSubmissionInlineAction(formData: FormData) {
+  const parsed = approveSubmissionSchema.safeParse({
+    submissionId: formData.get("submissionId"),
+    feedback: optionalString(formData.get("feedback")),
+  });
+
+  if (!parsed.success) {
+    return { error: "That submission could not be approved.", ok: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    const approvalId = await approveChoreSubmissionForCurrentPeriod(supabase, {
+      submissionId: parsed.data.submissionId,
+      feedback: parsed.data.feedback ?? null,
+    });
+
+    return { approvalId, ok: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not approve chore.",
+      ok: false,
+    };
+  }
+}
+
 export async function rejectSubmissionAction(formData: FormData) {
   const parsed = rejectSubmissionSchema.safeParse({
     submissionId: formData.get("submissionId"),
@@ -132,6 +159,33 @@ export async function rejectSubmissionAction(formData: FormData) {
   }
 
   redirect(`/parent?rejected=${rejectionId}`);
+}
+
+export async function rejectSubmissionInlineAction(formData: FormData) {
+  const parsed = rejectSubmissionSchema.safeParse({
+    submissionId: formData.get("submissionId"),
+    feedback: optionalString(formData.get("feedback")),
+  });
+
+  if (!parsed.success) {
+    return { error: "Add feedback before sending a chore back.", ok: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    const rejectionId = await rejectChoreSubmission(supabase, {
+      submissionId: parsed.data.submissionId,
+      feedback: parsed.data.feedback,
+    });
+
+    return { ok: true, rejectionId };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not send chore back.",
+      ok: false,
+    };
+  }
 }
 
 export async function reopenChoreAction(formData: FormData) {
