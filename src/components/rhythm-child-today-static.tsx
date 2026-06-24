@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type Task = {
+  action?: ReactNode;
   amount: string;
   children?: ReactNode;
   done?: boolean;
@@ -86,22 +87,29 @@ export function HeaderGreeting({
 export function SegmentedControl({
   items,
 }: {
-  items: Array<{ label: string; selected?: boolean }>;
+  items: Array<{ href?: string; label: string; onSelect?: () => void; selected?: boolean }>;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-[16px] bg-white/[0.08] p-1">
-      {items.map((item) => (
-        <button
-          className={cx(
-            "min-h-10 rounded-[14px] px-3 text-sm font-semibold",
-            item.selected ? "bg-white text-[#071743]" : "text-white",
-          )}
-          key={item.label}
-          type="button"
-        >
-          {item.label}
-        </button>
-      ))}
+    <div
+      className="grid gap-1 rounded-[16px] bg-white/[0.08] p-1"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+    >
+      {items.map((item) => {
+        const className = cx(
+          "flex min-h-10 items-center justify-center rounded-[14px] px-3 text-center text-sm font-semibold",
+          item.selected ? "bg-white text-[#071743]" : "text-white",
+        );
+
+        return item.href ? (
+          <Link className={className} href={item.href} key={item.label}>
+            {item.label}
+          </Link>
+        ) : (
+          <button className={className} key={item.label} onClick={item.onSelect} type="button">
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -132,7 +140,7 @@ export function Button({ children }: { children: ReactNode }) {
   );
 }
 
-export function TaskRow({ amount, children, done, icon, meta, statusLabel, title }: Task) {
+export function TaskRow({ action, amount, children, done, icon, meta, statusLabel, title }: Task) {
   return (
     <div className="border-b border-white/[0.08] px-1 py-2.5 last:border-b-0">
       <div className="grid grid-cols-[44px_1fr_auto] items-center gap-3">
@@ -146,17 +154,14 @@ export function TaskRow({ amount, children, done, icon, meta, statusLabel, title
             {meta ? <span className="font-medium text-white/60"> · {meta}</span> : null}
           </p>
         </div>
-        <div
-          aria-label={statusLabel ?? (done ? "Done" : "Not done")}
-          className={cx(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2",
-            done
-              ? "border-[#45F1F1] bg-[#45F1F1] text-[#061842]"
-              : "border-[#7893C8] text-transparent",
-          )}
-        >
-          ✓
-        </div>
+        {action ?? (done ? (
+          <div
+            aria-label={statusLabel ?? "Done"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#45F1F1] bg-[#45F1F1] text-[#061842]"
+          >
+            ✓
+          </div>
+        ) : null)}
       </div>
       {children ? <div className="mt-3 pl-[56px]">{children}</div> : null}
     </div>
@@ -269,7 +274,6 @@ export function ChildTodayStaticScreen() {
             items={[
               { label: "Today", selected: true },
               { label: "This Week" },
-              { label: "All" },
             ]}
           />
 

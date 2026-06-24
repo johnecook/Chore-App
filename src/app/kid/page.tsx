@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
-import { claimChoreAction, submitChoreAction } from "@/app/kid/actions";
+import { claimChoreAction } from "@/app/kid/actions";
 import {
   AppScreen,
   BalanceCard,
   BottomTabBar,
   Button,
   HeaderGreeting,
-  SectionHeader,
-  SegmentedControl,
   TaskRow,
 } from "@/components/rhythm-child-today-static";
+import { KidChoreSubmitCard } from "@/components/kid-chore-submit-card";
+import { KidTaskFilter } from "@/components/kid-task-filter";
 import { buildDateGroupedSections } from "@/domain/kid-home";
 import { requireCurrentProfile } from "@/lib/auth/session";
 import type { Database } from "@/lib/supabase/database.types";
@@ -20,11 +20,11 @@ export const dynamic = "force-dynamic";
 type ChoreInstance = Database["public"]["Tables"]["chore_instances"]["Row"];
 type ChoreTemplate = Pick<
   Database["public"]["Tables"]["chore_templates"]["Row"],
-  "id" | "title" | "description"
+  "id" | "title" | "description" | "schedule_type" | "weekly_weekdays" | "interval_days"
 >;
 type Household = Pick<
   Database["public"]["Tables"]["households"]["Row"],
-  "id" | "name" | "money_features_enabled"
+  "id" | "name" | "money_features_enabled" | "timezone"
 >;
 type ApprovalEvent = Pick<
   Database["public"]["Tables"]["approval_events"]["Row"],
@@ -73,8 +73,16 @@ function dueLabel(instance: ChoreInstance) {
   return `Due ${instance.occurrence_date}`;
 }
 
-function currentDateString() {
-  return new Date().toISOString().slice(0, 10);
+function dateStringInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(date);
+  const partByType = new Map(parts.map((part) => [part.type, part.value]));
+
+  return `${partByType.get("year")}-${partByType.get("month")}-${partByType.get("day")}`;
 }
 
 function ChoreSubmitCard({
@@ -93,89 +101,28 @@ function ChoreSubmitCard({
   template?: ChoreTemplate;
 }) {
   return (
-    <TaskRow
+    <KidChoreSubmitCard
       amount={
         moneyFeaturesEnabled && instance.value_model_snapshot === "fixed"
           ? formatMoney(instance.amount_cents_snapshot)
           : statusLabel(instance)
       }
-      done={instance.status === "submitted"}
-      meta={
-        <>
-          {dueLabel(instance)}
-          {household ? ` • ${household.name}` : ""}
-        </>
-      }
+      approvalRequired={instance.approval_required_snapshot}
+      checklistItems={checklistItems.map((item) => ({
+        id: item.id,
+        label: item.label,
+        required: item.required,
+      }))}
+      due={dueLabel(instance)}
+      householdName={household?.name}
+      instanceId={instance.id}
+      isRejected={instance.status === "rejected"}
+      parentFeedback={parentFeedback}
+      photoRequired={instance.photo_required_snapshot}
       statusLabel={statusLabel(instance)}
-      icon={instance.status === "rejected" ? "↺" : "▭"}
+      templateDescription={template?.description}
       title={template?.title ?? "Chore"}
-    >
-      <div className="grid gap-1">
-        {template?.description ? (
-          <p className="text-base text-[var(--muted)]">{template.description}</p>
-        ) : null}
-        {parentFeedback ? (
-          <p className="rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-base">
-            Parent note: {parentFeedback}
-          </p>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap gap-2 text-base font-semibold">
-        {instance.photo_required_snapshot ? (
-          <span className="rounded-full border border-[#AEEBF2]/30 bg-white/[0.08] px-3 py-1 text-sm text-[#AEEBF2]">
-            Photo required
-          </span>
-        ) : null}
-      </div>
-      <form action={submitChoreAction} className="grid gap-3" encType="multipart/form-data">
-        <input name="instanceId" type="hidden" value={instance.id} />
-        {checklistItems.length ? (
-          <fieldset className="grid gap-3">
-            <legend className="text-base font-semibold">Checklist</legend>
-            <div className="grid gap-2">
-              {checklistItems.map((item) => (
-                <label
-                  className="flex min-h-12 items-center gap-3 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-3 py-2 text-base font-medium text-white"
-                  key={item.id}
-                >
-                  <input
-                    className="size-5"
-                    name="checkedChecklistItemIds"
-                    required={item.required}
-                    type="checkbox"
-                    value={item.id}
-                  />
-                  {item.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ) : null}
-        <label className="grid gap-2 text-base font-semibold">
-          Note
-          <textarea
-            className="min-h-24 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-4 py-3 text-lg text-white"
-            maxLength={500}
-            name="note"
-          />
-        </label>
-        {instance.photo_required_snapshot ? (
-          <label className="grid gap-2 text-base font-semibold">
-            Photo proof
-            <input
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              className="min-h-12 rounded-2xl border border-white/[0.10] bg-white/[0.06] px-4 py-3 text-lg file:mr-4 file:rounded-md file:border-0 file:bg-[#061842] file:px-3 file:py-2 file:text-base file:font-semibold file:text-[#AEEBF2]"
-              name="photo"
-              required
-              type="file"
-            />
-          </label>
-        ) : null}
-        <Button>
-          Submit
-        </Button>
-      </form>
-    </TaskRow>
+    />
   );
 }
 
@@ -239,7 +186,7 @@ export default async function KidHomePage({
 
   const { data: childProfile, error: childProfileError } = await supabase
     .from("child_profiles")
-    .select("id, user_id")
+    .select("id, user_id, primary_household_id")
     .eq("user_id", profile.id)
     .maybeSingle();
 
@@ -259,7 +206,7 @@ export default async function KidHomePage({
 
   const householdIds = memberships?.map((membership) => membership.household_id) ?? [];
   const { data: households, error: householdError } = householdIds.length
-    ? await supabase.from("households").select("id, name, money_features_enabled").in("id", householdIds)
+    ? await supabase.from("households").select("id, name, money_features_enabled, timezone").in("id", householdIds)
     : { data: [], error: null };
 
   if (householdError) {
@@ -310,7 +257,7 @@ export default async function KidHomePage({
   const { data: templates, error: templateError } = templateIds.length
     ? await supabase
         .from("chore_templates")
-        .select("id, title, description")
+        .select("id, title, description, schedule_type, weekly_weekdays, interval_days")
         .in("id", templateIds)
     : { data: [], error: null };
 
@@ -351,9 +298,31 @@ export default async function KidHomePage({
   const toDoChores =
     instances?.filter((instance) => instance.status === "assigned" || instance.status === "rejected") ??
     [];
-  const toDoSections = buildDateGroupedSections(toDoChores, currentDateString());
+  const timeZone =
+    households?.find((household) => household.id === childProfile?.primary_household_id)?.timezone ??
+    households?.[0]?.timezone ??
+    "UTC";
+  const today = dateStringInTimeZone(new Date(), timeZone);
+  const isDailyRecurring = (instance: ChoreInstance) => {
+    const template = templateById.get(instance.template_id);
+
+    return (
+      template?.schedule_type === "daily" ||
+      (template?.schedule_type === "interval" && template.interval_days === 1) ||
+      (template?.schedule_type === "weekly" && (template.weekly_weekdays?.length ?? 0) > 1)
+    );
+  };
+  const toDoSections = buildDateGroupedSections(toDoChores, today, isDailyRecurring);
+  const todayToDoChores = toDoSections.find((section) => section.id === "today")?.items ?? [];
+  const weekToDoChores = toDoSections.find((section) => section.id === "week")?.items ?? [];
   const waitingChores = instances?.filter((instance) => instance.status === "submitted") ?? [];
+  const waitingSections = buildDateGroupedSections(waitingChores, today, isDailyRecurring);
+  const todayWaitingChores = waitingSections.find((section) => section.id === "today")?.items ?? [];
+  const weekWaitingChores = waitingSections.find((section) => section.id === "week")?.items ?? [];
   const availableChores = instances?.filter((instance) => instance.status === "available") ?? [];
+  const availableSections = buildDateGroupedSections(availableChores, today, isDailyRecurring);
+  const todayAvailableChores = availableSections.find((section) => section.id === "today")?.items ?? [];
+  const weekAvailableChores = availableSections.find((section) => section.id === "week")?.items ?? [];
   const { data: ledgerRows, error: ledgerError } = childProfile && moneyFeaturesEnabled
     ? await supabase
         .from("ledger_transactions")
@@ -381,9 +350,59 @@ export default async function KidHomePage({
   const unreadNotificationCount = unreadNotifications?.length ?? 0;
   const approvedBalanceCents =
     ledgerRows?.reduce((total, ledger) => total + ledger.amount_cents, 0) ?? 0;
-  const completedCount = waitingChores.length;
-  const totalVisibleTasks = toDoChores.length + waitingChores.length;
-  const progressPercentage = totalVisibleTasks ? Math.round((completedCount / totalVisibleTasks) * 100) : 0;
+
+  const taskContent = (visibleToDoChores: ChoreInstance[], visibleWaitingChores: ChoreInstance[]) => (
+    <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
+      {visibleToDoChores.map((instance) => (
+        <ChoreSubmitCard
+          checklistItems={checklistByInstanceId.get(instance.id) ?? []}
+          household={householdById.get(instance.earning_household_id)}
+          instance={instance}
+          key={instance.id}
+          moneyFeaturesEnabled={moneyFeaturesEnabled}
+          parentFeedback={latestRejectedFeedbackByInstanceId.get(instance.id)?.feedback}
+          template={templateById.get(instance.template_id)}
+        />
+      ))}
+      {visibleWaitingChores.map((instance) => {
+        const template = templateById.get(instance.template_id);
+
+        return (
+          <TaskRow
+            amount={
+              moneyFeaturesEnabled && instance.value_model_snapshot === "fixed"
+                ? formatMoney(instance.amount_cents_snapshot)
+                : "Submitted"
+            }
+            done
+            icon="✓"
+            key={instance.id}
+            meta={householdById.get(instance.earning_household_id)?.name}
+            statusLabel={statusLabel(instance)}
+            title={template?.title ?? "Chore"}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const availableContent = (visibleAvailableChores: ChoreInstance[]) => (
+    <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
+      {visibleAvailableChores.map((instance) => {
+        const template = templateById.get(instance.template_id);
+
+        return (
+          <ChoreClaimCard
+            checklistItems={checklistByInstanceId.get(instance.id) ?? []}
+            household={householdById.get(instance.earning_household_id)}
+            instance={instance}
+            key={instance.id}
+            template={template}
+          />
+        );
+      })}
+    </div>
+  );
 
   return (
     <AppScreen>
@@ -420,14 +439,6 @@ export default async function KidHomePage({
           name={`${profile.displayName}!`}
         />
         <div className="grid gap-5 px-5 pb-5">
-        <SegmentedControl
-          items={[
-            { label: "Today", selected: true },
-            { label: "This Week" },
-            { label: "All" },
-          ]}
-        />
-
         {params.error ? (
           <div className="rounded-[18px] border border-[#ffb4b4]/40 bg-[#ffb4b4]/10 p-4 text-lg font-medium text-[#ffb4b4]">
             {params.error}
@@ -455,79 +466,22 @@ export default async function KidHomePage({
           </div>
         ) : null}
 
-        {toDoChores.length || waitingChores.length ? (
-          <section className="grid gap-2" aria-labelledby="tasks-heading">
-            <SectionHeader
-              action={`${completedCount} of ${totalVisibleTasks} done`}
-              title="My tasks"
-            />
-            <div className="h-2 overflow-hidden rounded-full bg-white/[0.10]">
-              <div
-                className="h-full rounded-full bg-[#45F1F1]"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
-              {toDoSections.map((section) =>
-                section.items.map((instance) => (
-                    <ChoreSubmitCard
-                      checklistItems={checklistByInstanceId.get(instance.id) ?? []}
-                      household={householdById.get(instance.earning_household_id)}
-                      instance={instance}
-                      key={instance.id}
-                      moneyFeaturesEnabled={moneyFeaturesEnabled}
-                      parentFeedback={latestRejectedFeedbackByInstanceId.get(instance.id)?.feedback}
-                      template={templateById.get(instance.template_id)}
-                    />
-                )),
-              )}
-              {waitingChores.map((instance) => {
-                const template = templateById.get(instance.template_id);
-
-                return (
-                  <TaskRow
-                    amount={
-                      moneyFeaturesEnabled && instance.value_model_snapshot === "fixed"
-                        ? formatMoney(instance.amount_cents_snapshot)
-                        : "Submitted"
-                    }
-                    done
-                    icon="✓"
-                    key={instance.id}
-                    meta={householdById.get(instance.earning_household_id)?.name}
-                    statusLabel={statusLabel(instance)}
-                    title={template?.title ?? "Chore"}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ) : (
-          <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] p-4">
-            <p className="text-lg font-bold text-white">No chores are ready to submit.</p>
-          </div>
-        )}
-
-        {availableChores.length ? (
-          <section className="grid gap-2" aria-labelledby="available-heading">
-            <SectionHeader title="Available" />
-            <div className="rounded-[20px] bg-[linear-gradient(145deg,rgba(43,59,120,0.96),rgba(11,36,88,0.96))] px-3 py-1 shadow-[0_16px_34px_rgba(2,7,28,0.22)]">
-              {availableChores.map((instance) => {
-                const template = templateById.get(instance.template_id);
-
-                return (
-                    <ChoreClaimCard
-                    checklistItems={checklistByInstanceId.get(instance.id) ?? []}
-                    household={householdById.get(instance.earning_household_id)}
-                    instance={instance}
-                    key={instance.id}
-                    template={template}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
+        <KidTaskFilter
+          today={{
+            availableContent: availableContent(todayAvailableChores),
+            availableCount: todayAvailableChores.length,
+            completedCount: todayWaitingChores.length,
+            taskContent: taskContent(todayToDoChores, todayWaitingChores),
+            totalTaskCount: todayToDoChores.length + todayWaitingChores.length,
+          }}
+          week={{
+            availableContent: availableContent(weekAvailableChores),
+            availableCount: weekAvailableChores.length,
+            completedCount: weekWaitingChores.length,
+            taskContent: taskContent(weekToDoChores, weekWaitingChores),
+            totalTaskCount: weekToDoChores.length + weekWaitingChores.length,
+          }}
+        />
 
         {childProfile && moneyFeaturesEnabled ? (
           <BalanceCard balanceCents={approvedBalanceCents} href="/kid/money" />
